@@ -1,0 +1,17 @@
+{
+  "name": "@myvue/shared",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Shared utils for Vue 3",
+  "main": "index.js",
+  "module": "dist/shared.global.esm-bundle.js",
+  "buildOptions": {
+    "name": "VueShared",
+    "format": [
+      "esm-bundle",
+      "esm-browser",
+      "cjs",
+      "global"
+    ]
+  }
+}

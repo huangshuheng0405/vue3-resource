@@ -1,0 +1,20 @@
+{
+  "name": "@myvue/reactivity",
+  "version": "1.0.0",
+  "description": "Reactivity utils for Vue 3",
+  "type": "module",
+  "main": "index.js",
+  "module": "dist/reactivity.global.esm-bundle.js",
+  "buildOptions": {
+    "name": "VueReactivity",
+    "format": [
+      "esm-bundle",
+      "esm-browser",
+      "cjs",
+      "global"
+    ]
+  },
+  "dependencies": {
+    "@myvue/shared": "workspace:*"
+  }
+}

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div class="app"></div>
+    <script type="module">
+      // 原生的
+      // import {
+      //   reactive,
+      //   effect,
+      //   ref,
+      //   toRef,
+      //   toRefs,
+      //   proxyRefs,
+      //   computed
+      // } from '/node_modules/@vue/reactivity/dist/reactivity.esm-browser.js'
+
+      // 手写的
+      import {
+        reactive,
+        effect,
+        ref,
+        toRef,
+        toRefs,
+        proxyRefs,
+        computed
+      } from './reactivity.js'
+      const app = document.querySelector('.app')
+      // computed 计算属性
+      const state = reactive({ name: 'jw' })
+      const aliasName = computed({
+        get() {
+          console.log('running')
+          return '*' + state.name
+        },
+        set(value) {
+          console.log('set')
+        }
+      })
+      effect(() => {
+        console.log(aliasName.value)
+        console.log(aliasName.value)
+        console.log(aliasName.value)
+      })
+
+      setTimeout(() => {
+        state.name = 'jw'
+        aliasName.value = 'xxx'
+      }, 1000)
+    </script>
+  </body>
+</html>
