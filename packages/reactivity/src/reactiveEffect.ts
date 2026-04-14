@@ -19,7 +19,7 @@ export const createDep = (cleanup, key) => {
 }
 
 /**
- * 读取时收集依赖 在baseHandler.ts里调用的
+ * 读取对象的key对应的依赖集合 收集依赖
  * @param target 目标对象
  * @param key 键值
  */
@@ -48,7 +48,16 @@ export function track(target, key) {
   }
   trackEffect(activeEffect, dep) // 将当前的effect放入dep中 后续可以根据值的变化 触发此dep中存放的effect
 }
+
 // baseHandler.ts 调用的 在Proxy的set里调用的
+/**
+ * 找到target对应的key对应的依赖集合 触发相关的所有effect
+ * @param target
+ * @param key
+ * @param newValue
+ * @param oldValue
+ * @returns
+ */
 export function trigger(target, key, newValue, oldValue) {
   // 根据 target 找depsMap，找不到就说明从来没人依赖过他，直接返回
   const depsMap = targetMap.get(target)

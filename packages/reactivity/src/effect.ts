@@ -45,7 +45,7 @@ export class ReactiveEffect {
   public active = true // 创建的 effect 是响应式的
 
   /**
-   *
+   * effect 类
    * @param fn 用户编写的函数
    * @param scheduler 如果fn中依赖的数据发生变化后 需要重新调用 -> run()
    */
@@ -84,9 +84,16 @@ export class ReactiveEffect {
       activeEffect = lastEffect
     }
   }
+
+  /***
+   * 停止effect的执行
+   */
   stop() {
-    // todo
-    this.active = false
+    if (this.active) {
+      this.active = false
+      preCleanEffect(this)
+      postCleanEffect(this)
+    }
   }
 }
 
@@ -107,7 +114,6 @@ export function trackEffect(effect: ReactiveEffect, dep) {
   // 需要重新的去收集依赖 将不需要的移除掉
   if (dep.get(effect) !== effect._trackId) {
     dep.set(effect, effect._trackId) // 更新id
-    // console.log('优化了收集')
   }
   let oldDep = effect.deps[effect._depsLength]
   // 如果没有存过
@@ -124,7 +130,7 @@ export function trackEffect(effect: ReactiveEffect, dep) {
 }
 
 /**
- *
+ * 触发key相关联的所有effect集合 执行里面的回调函数
  * @param dep 对象里的key对应的所有effect集合
  */
 export const triggerEffect = (dep) => {
