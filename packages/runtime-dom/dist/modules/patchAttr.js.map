@@ -1,0 +1,1 @@
+{"version":3,"file":"patchAttr.js","sourceRoot":"","sources":["../../src/modules/patchAttr.ts"],"names":[],"mappings":"AAAA,MAAM,UAAU,SAAS,CAAC,EAAE,EAAE,GAAG,EAAE,KAAK;IACtC,IAAI,KAAK,KAAK,IAAI,EAAE,CAAC;QACnB,EAAE,CAAC,eAAe,CAAC,GAAG,CAAC,CAAA;IACzB,CAAC;SAAM,CAAC;QACN,EAAE,CAAC,YAAY,CAAC,GAAG,CAAC,CAAA;IACtB,CAAC;AACH,CAAC"}

@@ -4,14 +4,14 @@ import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
 import esbuild from 'esbuild'
 
-// node dev.js reactivity -f esm 从第二个开始取参数
+// "dev": "node scripts/dev.js runtime-dom -f esm"
 
-// 拿到
+// 拿到 runtime-dom -f esm
 const args = minimist(process.argv.slice(2))
 
 const target = args._[0] // 打包哪个项目
 const format = args.f || 'iife' // 打包后的模块化规范
-console.log(args)
+// console.log(args)
 
 const __filename = fileURLToPath(import.meta.url) // 获取当前文件的绝对路径
 const __dirname = dirname(__filename) // 获取当前文件所在目录

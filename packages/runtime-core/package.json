@@ -1,0 +1,26 @@
+{
+  "name": "@myvue/runtime-core",
+  "version": "1.0.0",
+  "description": "Runtime core utils for Vue 3",
+  "type": "module",
+  "types": "dist/index.d.ts",
+  "main": "index.js",
+  "module": "src/index.ts",
+  "unpkg": "dist/runtime-core.global.js",
+  "scripts": {
+    "dev:ts": "tsc -w"
+  },
+  "buildOptions": {
+    "name": "RuntimeCore",
+    "format": [
+      "esm-bundle",
+      "esm-browser",
+      "cjs",
+      "global"
+    ]
+  },
+  "dependencies": {
+    "@myvue/reactivity": "workspace:*",
+    "@myvue/shared": "workspace:*"
+  }
+}

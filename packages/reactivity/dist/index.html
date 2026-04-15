@@ -8,6 +8,7 @@
   <body>
     <div class="app"></div>
     <script type="module">
+      const app = document.querySelector('.app')
       // 原生的
       // import {
       //   reactive,
@@ -16,8 +17,10 @@
       //   toRef,
       //   toRefs,
       //   proxyRefs,
-      //   computed
-      // } from '/node_modules/@vue/reactivity/dist/reactivity.esm-browser.js'
+      //   computed,
+      //   watch,
+      //   watchEffect
+      // } from '/node_modules/vue/dist/vue.esm-browser.js'
 
       // 手写的
       import {
@@ -27,29 +30,61 @@
         toRef,
         toRefs,
         proxyRefs,
-        computed
+        computed,
+        watch,
+        watchEffect
       } from './reactivity.js'
-      const app = document.querySelector('.app')
-      // computed 计算属性
-      const state = reactive({ name: 'jw' })
-      const aliasName = computed({
-        get() {
-          console.log('running')
-          return '*' + state.name
-        },
-        set(value) {
-          console.log('set')
-        }
-      })
-      effect(() => {
-        console.log(aliasName.value)
-        console.log(aliasName.value)
-        console.log(aliasName.value)
+
+      // const val = reactive({
+      //   val: ''
+      // })
+
+      // function getDate(timer) {
+      //   return new Promise((resolve, reject) => {
+      //     setTimeout(() => {
+      //       resolve(timer)
+      //     }, timer)
+      //   })
+      // }
+
+      // let timer = 3000
+      // let q = []
+      // watch(
+      //   val,
+      //   async (newVal, oldVal, onCleanup) => {
+      //     let flag = true
+      //     // for (let i = 0; i < q.length; i++) {
+      //     //   q[i]()
+      //     // }
+      //     // q.push(() => (flag = false))
+      //     timer -= 1000
+      //     onCleanup(() => {
+      //       flag = false
+      //     })
+      //     let res = await getDate(timer)
+
+      //     if (flag) {
+      //       app.innerHTML = res
+      //     }
+      //   },
+      //   {
+      //     flush: 'sync'
+      //   }
+      // )
+
+      // setTimeout(() => {
+      //   val.val = 'a'
+      //   val.val = 'b'
+      // }, 1000)
+
+      const val = ref('')
+      watch(val, (newVal, oldVal) => {
+        console.log(newVal, oldVal)
       })
 
       setTimeout(() => {
-        state.name = 'jw'
-        aliasName.value = 'xxx'
+        val.value = 'a'
+        val.value = 'b'
       }, 1000)
     </script>
   </body>

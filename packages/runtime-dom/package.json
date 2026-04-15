@@ -1,13 +1,16 @@
 {
-  "name": "@myvue/reactivity",
+  "name": "@myvue/runtime-dom",
   "version": "1.0.0",
-  "description": "Reactivity utils for Vue 3",
+  "description": "Runtime DOM utils for Vue 3",
   "type": "module",
   "main": "index.js",
   "module": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "types": "dist/runtime-dom.d.ts",
+  "scripts": {
+    "dev:ts": "tsc -w"
+  },
   "buildOptions": {
-    "name": "VueReactivity",
+    "name": "RuntimeDom",
     "format": [
       "esm-bundle",
       "esm-browser",
@@ -16,6 +19,7 @@
     ]
   },
   "dependencies": {
+    "@myvue/runtime-core": "workspace:*",
     "@myvue/shared": "workspace:*"
   }
 }

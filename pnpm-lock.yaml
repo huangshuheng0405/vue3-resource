@@ -28,6 +28,24 @@ importers:
         specifier: workspace:*
         version: link:../shared
 
+  packages/runtime-core:
+    dependencies:
+      '@myvue/reactivity':
+        specifier: workspace:*
+        version: link:../reactivity
+      '@myvue/shared':
+        specifier: workspace:*
+        version: link:../shared
+
+  packages/runtime-dom:
+    dependencies:
+      '@myvue/runtime-core':
+        specifier: workspace:*
+        version: link:../runtime-core
+      '@myvue/shared':
+        specifier: workspace:*
+        version: link:../shared
+
   packages/shared: {}
 
 packages:
