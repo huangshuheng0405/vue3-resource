@@ -11,16 +11,13 @@ const args = minimist(process.argv.slice(2))
 
 const target = args._[0] // 打包哪个项目
 const format = args.f || 'iife' // 打包后的模块化规范
-// console.log(args)
 
 const __filename = fileURLToPath(import.meta.url) // 获取当前文件的绝对路径
 const __dirname = dirname(__filename) // 获取当前文件所在目录
 const require = createRequire(import.meta.url) // 相当于 commonjs 的 require
 const pkg = require(`../packages/${target}/package.json`)
-// console.log(__dirname, __filename, require)
 
 const entry = resolve(__dirname, `../packages/${target}/src/index.ts`)
-// console.log(entry)
 
 esbuild
   .context({
