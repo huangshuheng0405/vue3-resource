@@ -4,10 +4,11 @@
   "description": "Runtime DOM utils for Vue 3",
   "type": "module",
   "main": "index.js",
-  "module": "dist/index.js",
-  "types": "dist/runtime-dom.d.ts",
+  "module": "dist/runtime-dom.mjs",
+  "types": "dist/types/index.d.ts",
   "scripts": {
-    "dev:ts": "tsc -w"
+    "dev:ts": "tsc -w",
+    "build": "node build.js"
   },
   "buildOptions": {
     "name": "RuntimeDom",

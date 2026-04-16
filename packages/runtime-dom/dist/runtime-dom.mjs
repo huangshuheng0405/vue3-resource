@@ -1,4 +1,4 @@
-// packages/runtime-dom/src/nodeOps.ts
+// src/nodeOps.ts
 var nodeOps = {
   createElement(type) {
     return document.createElement(type);
@@ -48,7 +48,7 @@ var nodeOps = {
   }
 };
 
-// packages/runtime-dom/src/modules/patchAttr.ts
+// src/modules/patchAttr.ts
 function patchAttr(el, key, value) {
   if (value === null) {
     el.removeAttribute(key);
@@ -57,7 +57,7 @@ function patchAttr(el, key, value) {
   }
 }
 
-// packages/runtime-dom/src/modules/patchClass.ts
+// src/modules/patchClass.ts
 function patchClass(el, nextValue) {
   if (nextValue == null) {
     el.removeAttribute("class");
@@ -66,7 +66,7 @@ function patchClass(el, nextValue) {
   }
 }
 
-// packages/runtime-dom/src/modules/patchEvent.ts
+// src/modules/patchEvent.ts
 function createInvoker(nextValue) {
   const invoker = (e) => {
     invoker.value(e);
@@ -91,7 +91,7 @@ function patchEvent(el, key, nextValue) {
   }
 }
 
-// packages/runtime-dom/src/modules/patchStyle.ts
+// src/modules/patchStyle.ts
 function patchStyle(el, prevValue, nextValue) {
   let style = el.style;
   for (let key in nextValue) {
@@ -106,7 +106,7 @@ function patchStyle(el, prevValue, nextValue) {
   }
 }
 
-// packages/runtime-dom/src/patchProp.ts
+// src/patchProp.ts
 function patchProp(el, key, prevValue, nextValue) {
   if (key === "class") {
     return patchClass(el, nextValue);
@@ -119,7 +119,7 @@ function patchProp(el, key, prevValue, nextValue) {
   }
 }
 
-// packages/runtime-core/dist/runtime-core.mjs
+// ../runtime-core/dist/runtime-core.mjs
 var ShapeFlags = /* @__PURE__ */ ((ShapeFlags22) => {
   ShapeFlags22[ShapeFlags22["ELEMENT"] = 1] = "ELEMENT";
   ShapeFlags22[ShapeFlags22["FUNCTIONAL_COMPONENT"] = 2] = "FUNCTIONAL_COMPONENT";
@@ -236,7 +236,7 @@ function createRenderer(renderOptions2) {
   };
 }
 
-// packages/runtime-dom/src/index.ts
+// src/index.ts
 var renderOptions = Object.assign({ patchProp }, nodeOps);
 var render = (vnode, container) => {
   return createRenderer(renderOptions).render(vnode, container);
@@ -247,4 +247,4 @@ export {
   h,
   render
 };
-//# sourceMappingURL=runtime-dom.js.map
+//# sourceMappingURL=runtime-dom.mjs.map

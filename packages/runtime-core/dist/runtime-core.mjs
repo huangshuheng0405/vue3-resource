@@ -1,125 +1,4 @@
-// packages/runtime-dom/src/nodeOps.ts
-var nodeOps = {
-  createElement(type) {
-    return document.createElement(type);
-  },
-  setElementText(el, text) {
-    el.textContent = text;
-  },
-  insert(el, parent, anchor) {
-    parent.insertBefore(el, anchor || null);
-  },
-  /**
-   * 移除dom节点
-   * @param el 节点
-   */
-  remove(el) {
-    const parent = el.parentNode;
-    if (parent) {
-      parent.removeChild(el);
-    }
-  },
-  createText(text) {
-    return document.createTextNode(text);
-  },
-  /**
-   * 设置文本
-   * @param el 元素节点
-   * @param text 文本内容
-   */
-  setText(el, text) {
-    el.nodeValue = text;
-  },
-  /**
-   * 获取父节点
-   * @param el 节点
-   * @returns 父节点
-   */
-  parentNode(el) {
-    return el.parentNode;
-  },
-  /**
-   * 获取兄弟节点
-   * @param el 节点
-   * @returns 下一个兄弟节点
-   */
-  nextSibling(el) {
-    return el.nextSibling;
-  }
-};
-
-// packages/runtime-dom/src/modules/patchAttr.ts
-function patchAttr(el, key, value) {
-  if (value === null) {
-    el.removeAttribute(key);
-  } else {
-    el.setAttribute(key);
-  }
-}
-
-// packages/runtime-dom/src/modules/patchClass.ts
-function patchClass(el, nextValue) {
-  if (nextValue == null) {
-    el.removeAttribute("class");
-  } else {
-    el.className = nextValue;
-  }
-}
-
-// packages/runtime-dom/src/modules/patchEvent.ts
-function createInvoker(nextValue) {
-  const invoker = (e) => {
-    invoker.value(e);
-  };
-  invoker.value = nextValue;
-  return invoker;
-}
-function patchEvent(el, key, nextValue) {
-  const invokers = el._vei || (el._vei = {});
-  const eventName = key.slice(2).toLowerCase();
-  const existingInvoker = invokers[key];
-  if (nextValue && existingInvoker) {
-    return existingInvoker.value = nextValue;
-  }
-  if (nextValue) {
-    const invoker = invokers[key] = createInvoker(nextValue);
-    return el.addEventListener(eventName, invoker);
-  }
-  if (existingInvoker) {
-    el.removeEventListener(eventName, existingInvoker);
-    invokers[key] = void 0;
-  }
-}
-
-// packages/runtime-dom/src/modules/patchStyle.ts
-function patchStyle(el, prevValue, nextValue) {
-  let style = el.style;
-  for (let key in nextValue) {
-    style[key] = nextValue[key];
-  }
-  if (prevValue) {
-    for (let key in prevValue) {
-      if (nextValue[key] == null) {
-        style[key] = null;
-      }
-    }
-  }
-}
-
-// packages/runtime-dom/src/patchProp.ts
-function patchProp(el, key, prevValue, nextValue) {
-  if (key === "class") {
-    return patchClass(el, nextValue);
-  } else if (key === "style") {
-    return patchStyle(el, prevValue, nextValue);
-  } else if (/^on[^a-z]/.test(key)) {
-    return patchEvent(el, key, nextValue);
-  } else {
-    return patchAttr(el, key, nextValue);
-  }
-}
-
-// packages/runtime-core/dist/runtime-core.mjs
+// ../shared/dist/shared.mjs
 var ShapeFlags = /* @__PURE__ */ ((ShapeFlags22) => {
   ShapeFlags22[ShapeFlags22["ELEMENT"] = 1] = "ELEMENT";
   ShapeFlags22[ShapeFlags22["FUNCTIONAL_COMPONENT"] = 2] = "FUNCTIONAL_COMPONENT";
@@ -143,6 +22,8 @@ function isString(value) {
 function isVNode(value) {
   return value.__v_isVnode;
 }
+
+// src/createVnode.ts
 function createVNode(type, props, children) {
   const shapeFlag = isString(type) ? ShapeFlags.ELEMENT : 0;
   const vnode = {
@@ -166,6 +47,8 @@ function createVNode(type, props, children) {
   }
   return vnode;
 }
+
+// src/h.ts
 function h(type, propsOrChildren, children) {
   let l = arguments.length;
   if (l === 2) {
@@ -187,7 +70,9 @@ function h(type, propsOrChildren, children) {
     return createVNode(type, propsOrChildren, children);
   }
 }
-function createRenderer(renderOptions2) {
+
+// src/renderer.ts
+function createRenderer(renderOptions) {
   const {
     insert: hostInsert,
     remove: hostRemove,
@@ -198,7 +83,7 @@ function createRenderer(renderOptions2) {
     parentNode: hostParentNode,
     nextSibling: hostNextSibling,
     patchProp: hostPatchProp
-  } = renderOptions2;
+  } = renderOptions;
   const mountChildren = (children, container) => {
     for (let i = 0; i < children.length; i++) {
       patch(null, children[i], container);
@@ -227,24 +112,17 @@ function createRenderer(renderOptions2) {
       mountElement(n2, container);
     }
   };
-  const render2 = (vnode, container) => {
+  const render = (vnode, container) => {
     patch(container._vnode || null, vnode, container);
     container._vnode = vnode;
   };
   return {
-    render: render2
+    render
   };
 }
-
-// packages/runtime-dom/src/index.ts
-var renderOptions = Object.assign({ patchProp }, nodeOps);
-var render = (vnode, container) => {
-  return createRenderer(renderOptions).render(vnode, container);
-};
 export {
   createRenderer,
   createVNode,
-  h,
-  render
+  h
 };
-//# sourceMappingURL=runtime-dom.js.map
+//# sourceMappingURL=runtime-core.mjs.map

@@ -4,10 +4,11 @@
   "type": "module",
   "description": "Shared utils for Vue 3",
   "main": "index.js",
-  "module": "src/index.ts",
-  "types": "dist/index.d.ts",
+  "module": "dist/shared.mjs",
+  "types": "dist/types/index.d.ts",
   "scripts": {
-    "dev:ts": "tsc -w"
+    "dev:ts": "tsc -w",
+    "build": "node build.js"
   },
   "buildOptions": {
     "name": "VueShared",
