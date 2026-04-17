@@ -32,3 +32,13 @@ export function createVNode(type: any, props: any, children?: any) {
 
   return vnode
 }
+
+/**
+ * 判断是否是同一个虚拟节点
+ * @param n1 虚拟节点1
+ * @param n2 虚拟节点2
+ * @returns 是否是同一个虚拟节点
+ */
+export function isSameVnode(n1: any, n2: any) {
+  return n1.type === n2.type && n1.key === n2.key
+}
