@@ -1,1 +1,0 @@
-{"version":3,"file":"patchClass.js","sourceRoot":"","sources":["../../../src/modules/patchClass.ts"],"names":[],"mappings":"AAAA,MAAM,UAAU,UAAU,CAAC,EAAE,EAAE,SAAS;IACtC,IAAI,SAAS,IAAI,IAAI,EAAE,CAAC;QACtB,EAAE,CAAC,eAAe,CAAC,OAAO,CAAC,CAAA;IAC7B,CAAC;SAAM,CAAC;QACN,EAAE,CAAC,SAAS,GAAG,SAAS,CAAA;IAC1B,CAAC;AACH,CAAC"}

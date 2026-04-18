@@ -8,16 +8,34 @@
   <body>
     <div class="app"></div>
     <script type="module">
-      import { render, h } from './runtime-dom.mjs'
+      //   import {
+      //     createRenderer,
+      //     render,
+      //     h,
+      //     Text,
+      //     Fragment
+      //   } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js'
+      import { render, h, Text, Fragment } from './runtime-dom.js'
+      const app = document.querySelector('.app')
 
-      //   debugger
-      const ele1 = h(
-        'div',
-        { style: { color: 'red' } },
-        h('div', 'a1'),
-        h('div', 'a2')
-      )
-      console.log('🚀 ~ ele1:', ele1)
+      const VueComponent = {
+        data() {
+          return {
+            name: 'hsh',
+            age: 18
+          }
+        },
+        render() {
+          setTimeout(() => {
+            this.age++
+          }, 1000)
+          return h('div', [h(Text, 'hello ' + this.name), h('a', this.age)])
+        }
+      }
+
+      // 组件由两个虚拟节点组成
+      // render函数返回的虚拟节点
+      render(h(VueComponent), app)
     </script>
   </body>
 </html>

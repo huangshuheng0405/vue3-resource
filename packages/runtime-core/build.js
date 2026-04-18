@@ -8,7 +8,7 @@ esbuild
     sourcemap: true,
     target: ['es2020'],
     format: 'esm',
-    outfile: 'dist/runtime-core.mjs'
+    outfile: 'dist/runtime-core.js'
   })
   .then((context) => {
     console.log('successfully build by esbuild')

@@ -1,132 +1,4 @@
-// src/nodeOps.ts
-var nodeOps = {
-  /**
-   *
-   * @param type
-   * @returns 返回一个真实dom对象
-   */
-  createElement(type) {
-    return document.createElement(type);
-  },
-  setElementText(el, text) {
-    el.textContent = text;
-  },
-  insert(el, parent, anchor) {
-    parent.insertBefore(el, anchor || null);
-  },
-  /**
-   * 移除dom节点
-   * @param el 节点
-   */
-  remove(el) {
-    const parent = el.parentNode;
-    if (parent) {
-      parent.removeChild(el);
-    }
-  },
-  createText(text) {
-    return document.createTextNode(text);
-  },
-  /**
-   * 设置文本
-   * @param el 元素节点
-   * @param text 文本内容
-   */
-  setText(el, text) {
-    el.nodeValue = text;
-  },
-  /**
-   * 获取父节点
-   * @param el 节点
-   * @returns 父节点
-   */
-  parentNode(el) {
-    return el.parentNode;
-  },
-  /**
-   * 获取兄弟节点
-   * @param el 节点
-   * @returns 下一个兄弟节点
-   */
-  nextSibling(el) {
-    return el.nextSibling;
-  }
-};
-
-// src/modules/patchAttr.ts
-function patchAttr(el, key, value) {
-  if (value == null) {
-    el.removeAttribute(key);
-  } else {
-    el.setAttribute(key, value);
-  }
-}
-
-// src/modules/patchClass.ts
-function patchClass(el, nextValue) {
-  if (nextValue == null) {
-    el.removeAttribute("class");
-  } else {
-    el.className = nextValue;
-  }
-}
-
-// src/modules/patchEvent.ts
-function createInvoker(nextValue) {
-  const invoker = (e) => {
-    invoker.value(e);
-  };
-  invoker.value = nextValue;
-  return invoker;
-}
-function patchEvent(el, key, nextValue) {
-  const invokers = el._vei || (el._vei = {});
-  const eventName = key.slice(2).toLowerCase();
-  const existingInvoker = invokers[key];
-  if (nextValue && existingInvoker) {
-    return existingInvoker.value = nextValue;
-  }
-  if (nextValue) {
-    const invoker = invokers[key] = createInvoker(nextValue);
-    return el.addEventListener(eventName, invoker);
-  }
-  if (existingInvoker) {
-    el.removeEventListener(eventName, existingInvoker);
-    invokers[key] = void 0;
-  }
-}
-
-// src/modules/patchStyle.ts
-function patchStyle(el, prevValue, nextValue) {
-  let style = el.style;
-  for (let key in nextValue) {
-    style[key] = nextValue[key];
-  }
-  if (prevValue) {
-    for (let key in prevValue) {
-      if (nextValue) {
-        if (nextValue[key] == null) {
-          style[key] = null;
-        }
-      }
-    }
-  }
-}
-
-// src/patchProp.ts
-function patchProp(el, key, prevValue, nextValue) {
-  if (key === "class") {
-    return patchClass(el, nextValue);
-  } else if (key === "style") {
-    return patchStyle(el, prevValue, nextValue);
-  } else if (/^on[^a-z]/.test(key)) {
-    return patchEvent(el, key, nextValue);
-  } else {
-    return patchAttr(el, key, nextValue);
-  }
-}
-
-// ../runtime-core/dist/runtime-core.js
+// ../shared/dist/shared.js
 var ShapeFlags = /* @__PURE__ */ ((ShapeFlags22) => {
   ShapeFlags22[ShapeFlags22["ELEMENT"] = 1] = "ELEMENT";
   ShapeFlags22[ShapeFlags22["FUNCTIONAL_COMPONENT"] = 2] = "FUNCTIONAL_COMPONENT";
@@ -150,6 +22,8 @@ function isString(value) {
 function isVNode(value) {
   return value.__v_isVnode;
 }
+
+// src/createVnode.ts
 function createVNode(type, props, children) {
   const shapeFlag = isString(type) ? ShapeFlags.ELEMENT : isObject(type) ? ShapeFlags.STATEFUL_COMPONENT : 0;
   const vnode = {
@@ -178,6 +52,8 @@ function isSameVnode(n1, n2) {
 }
 var Text = /* @__PURE__ */ Symbol("Text");
 var Fragment = /* @__PURE__ */ Symbol("Fragment");
+
+// src/h.ts
 function h(type, propsOrChildren, children) {
   let l = arguments.length;
   if (l === 2) {
@@ -199,6 +75,8 @@ function h(type, propsOrChildren, children) {
     return createVNode(type, propsOrChildren, children);
   }
 }
+
+// src/LIS.ts
 function getSequence(arr) {
   const result = [0];
   const len = arr.length;
@@ -237,6 +115,8 @@ function getSequence(arr) {
   }
   return result;
 }
+
+// ../reactivity/dist/reactivity.js
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
@@ -422,7 +302,9 @@ function createReactiveObject(target) {
 function reactive(target) {
   return createReactiveObject(target);
 }
-function createRenderer(renderOptions2) {
+
+// src/renderer.ts
+function createRenderer(renderOptions) {
   const {
     insert: hostInsert,
     remove: hostRemove,
@@ -433,7 +315,7 @@ function createRenderer(renderOptions2) {
     parentNode: hostParentNode,
     nextSibling: hostNextSibling,
     patchProp: hostPatchProp
-  } = renderOptions2;
+  } = renderOptions;
   const mountChildren = (children, container) => {
     for (let i = 0; i < children.length; i++) {
       patch(null, children[i], container);
@@ -612,7 +494,7 @@ function createRenderer(renderOptions2) {
   };
   const mountcomponent = (vnode2, container, anchor) => {
     const { data = () => {
-    }, render: render22 } = vnode2.type;
+    }, render: render2 } = vnode2.type;
     const state = reactive(data());
     const instance = {
       state,
@@ -628,12 +510,12 @@ function createRenderer(renderOptions2) {
     };
     const componentUpdateFn = () => {
       if (!instance.isMounted) {
-        const subTree = render22.call(state, state);
+        const subTree = render2.call(state, state);
         instance.subTree = subTree;
         instance.isMounted = true;
         patch(null, subTree, container, anchor);
       } else {
-        const subTree = render22.call(state, state);
+        const subTree = render2.call(state, state);
         patch(instance.subTree, subTree, container, anchor);
         instance.subTree = subTree;
       }
@@ -684,7 +566,7 @@ function createRenderer(renderOptions2) {
       hostRemove(vnode.el);
     }
   };
-  const render2 = (vnode, container) => {
+  const render = (vnode, container) => {
     if (vnode === null) {
       if (container._vnode) {
         unmount(container._vnode);
@@ -695,22 +577,15 @@ function createRenderer(renderOptions2) {
     }
   };
   return {
-    render: render2
+    render
   };
 }
-
-// src/index.ts
-var renderOptions = Object.assign({ patchProp }, nodeOps);
-var render = (vnode, container) => {
-  return createRenderer(renderOptions).render(vnode, container);
-};
 export {
   Fragment,
   Text,
   createRenderer,
   createVNode,
   h,
-  isSameVnode,
-  render
+  isSameVnode
 };
-//# sourceMappingURL=runtime-dom.js.map
+//# sourceMappingURL=runtime-core.js.map

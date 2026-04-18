@@ -3,7 +3,7 @@
   "compilerOptions": {
     // File Layout
     "rootDir": "./src",
-    "outDir": "./dist",
+    "outDir": "./dist/types",
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
@@ -18,6 +18,7 @@
     // Other Outputs
     "sourceMap": true,
     "declaration": true,
+    "emitDeclarationOnly": true,
     "declarationMap": true,
 
     // Stricter Typechecking Options

@@ -1,6 +1,6 @@
 /**
- *
- * @param renderOptions runtime-dom的那套dom能力
+ * 把vnode渲染成真实dom
+ * @param renderOptions runtime-dom提供的操作dom的函数
  * @returns 一个对象包含render
  */
 export declare function createRenderer(renderOptions: any): {

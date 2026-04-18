@@ -1,5 +1,5 @@
-function createInvoker(nextValue) {
-  const invoker = (e) => {
+function createInvoker(nextValue: any) {
+  const invoker = (e: any) => {
     invoker.value(e)
   }
   // 更改 invoker中的value属性 可以修改对应的调用函数
@@ -14,7 +14,7 @@ function createInvoker(nextValue) {
  * @param nextValue 事件处理函数
  * @returns
  */
-export function patchEvent(el, key, nextValue) {
+export function patchEvent(el: any, key: any, nextValue: any) {
   // vue_event_invoker
   // 拿到旧的
   const invokers = el._vei || (el._vei = {})

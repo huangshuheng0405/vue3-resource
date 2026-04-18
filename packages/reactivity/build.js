@@ -8,7 +8,7 @@ esbuild
     sourcemap: true,
     target: ['es2020'],
     format: 'esm',
-    outfile: 'dist/runtime-dom.js'
+    outfile: 'dist/reactivity.js'
   })
   .then((context) => {
     console.log('successfully build by esbuild')

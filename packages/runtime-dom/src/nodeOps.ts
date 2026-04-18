@@ -4,6 +4,11 @@
  * DOM操作方法
  */
 export const nodeOps = {
+  /**
+   *
+   * @param type
+   * @returns 返回一个真实dom对象
+   */
   createElement(type: any) {
     return document.createElement(type)
   },

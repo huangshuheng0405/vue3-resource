@@ -1,4 +1,4 @@
-import { isFunction } from 'packages/shared/src/index.js'
+import { isFunction } from '@myvue/shared'
 import { ReactiveEffect } from './effect.js'
 import { trackRefValue, triggerRefValue } from './ref.js'
 

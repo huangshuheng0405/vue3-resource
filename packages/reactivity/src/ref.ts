@@ -7,7 +7,7 @@ import { createDep } from './reactiveEffect.js'
  * @param value
  * @returns
  */
-export function ref(value): RefImpl {
+export function ref(value: any): RefImpl {
   return createRef(value)
 }
 
@@ -16,22 +16,22 @@ export function ref(value): RefImpl {
  * @param value
  * @returns
  */
-function createRef(value) {
+function createRef(value: any) {
   return new RefImpl(value)
 }
 
 class RefImpl {
   public __v_isRef = true // 增加ref 标识
   public _value // 用来保存ref的值
-  public dep
-  constructor(public rawValue) {
+  public dep: any
+  constructor(public rawValue: any) {
     this._value = toReactive(rawValue)
   }
   get value() {
     trackRefValue(this)
     return this._value
   }
-  set value(newValue) {
+  set value(newValue: any) {
     if (newValue !== this.rawValue) {
       this.rawValue = newValue
       this._value = toReactive(newValue)
@@ -44,7 +44,7 @@ class RefImpl {
  * 收集依赖
  * @param ref
  */
-export function trackRefValue(ref) {
+export function trackRefValue(ref: any) {
   if (activeEffect) {
     trackEffect(
       activeEffect,
@@ -57,7 +57,7 @@ export function trackRefValue(ref) {
  * 触发回调函数
  * @param ref
  */
-export function triggerRefValue(ref) {
+export function triggerRefValue(ref: any) {
   let dep = ref.dep
   if (dep) {
     triggerEffect(dep) // 触发依赖更新
@@ -66,8 +66,8 @@ export function triggerRefValue(ref) {
 
 class ObjectRefImpl {
   constructor(
-    public _object,
-    public _key
+    public _object: any,
+    public _key: any
   ) {}
   get value() {
     return this._object[this._key]
@@ -77,14 +77,15 @@ class ObjectRefImpl {
   }
 }
 
-export function toRef(object: object, key) {
+export function toRef(object: object, key: any) {
   return new ObjectRefImpl(object, key)
 }
 
-export function toRefs(object) {
+export function toRefs(object: any) {
   const res = {}
   for (let key in object) {
     // 每个属性调用 toRef 方法 生成响应式数据
+    // @ts-ignore
     res[key] = toRef(object, key)
   }
   return res
@@ -97,6 +98,7 @@ export function proxyRefs(objectWithRef: RefImpl) {
       return r.__v_isRef ? r.value : r // 自动去掉 ref 标识
     },
     set(target, key, newValue, receiver) {
+      // @ts-ignore
       const oldValue = target[key]
       if (oldValue.__v_isRef) {
         oldValue.value = newValue // 如果老值是 ref 需要给 ref 赋值

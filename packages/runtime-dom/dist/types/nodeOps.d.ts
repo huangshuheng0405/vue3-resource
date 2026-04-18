@@ -2,6 +2,11 @@
  * DOM操作方法
  */
 export declare const nodeOps: {
+    /**
+     *
+     * @param type
+     * @returns 返回一个真实dom对象
+     */
     createElement(type: any): any;
     setElementText(el: any, text: any): void;
     insert(el: any, parent: any, anchor: any): void;

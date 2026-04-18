@@ -1,1 +1,1 @@
-{"version":3,"file":"patchAttr.d.ts","sourceRoot":"","sources":["../../../src/modules/patchAttr.ts"],"names":[],"mappings":"AAAA,wBAAgB,SAAS,CAAC,EAAE,KAAA,EAAE,GAAG,KAAA,EAAE,KAAK,KAAA,QAMvC"}
+{"version":3,"file":"patchAttr.d.ts","sourceRoot":"","sources":["../../../src/modules/patchAttr.ts"],"names":[],"mappings":"AAAA;;;;;GAKG;AACH,wBAAgB,SAAS,CAAC,EAAE,EAAE,GAAG,EAAE,GAAG,EAAE,GAAG,EAAE,KAAK,EAAE,GAAG,QAMtD"}

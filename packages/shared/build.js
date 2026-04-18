@@ -8,7 +8,7 @@ esbuild
     sourcemap: true,
     target: ['es2020'],
     format: 'esm',
-    outfile: 'dist/shared.mjs'
+    outfile: 'dist/shared.js'
   })
   .then((context) => {
     console.log('successfully build by esbuild')

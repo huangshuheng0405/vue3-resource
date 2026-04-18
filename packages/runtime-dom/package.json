@@ -4,7 +4,7 @@
   "description": "Runtime DOM utils for Vue 3",
   "type": "module",
   "main": "index.js",
-  "module": "dist/runtime-dom.mjs",
+  "module": "dist/runtime-dom.js",
   "types": "dist/types/index.d.ts",
   "scripts": {
     "dev:ts": "tsc -w",

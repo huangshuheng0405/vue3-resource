@@ -1,4 +1,4 @@
-import { isFunction, isObject } from 'packages/shared/src/index.js'
+import { isFunction, isObject } from '@myvue/shared'
 import { ReactiveEffect } from './effect.js'
 import { isReactive } from './constants.js'
 import { isRef } from './constants.js'
