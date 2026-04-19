@@ -19,29 +19,26 @@
       const app = document.querySelector('.app')
 
       const VueComponent = {
-        props: {
-          name: String,
-          age: Number
-        },
         data() {
           return {
-            x: 1,
-            y: 2
+            name: 'hsh',
+            age: 18
           }
         },
-        render(proxy) {
-          console.log('🚀 ~ proxy:', proxy)
-
-          return h('div', [
-            h(Text, 'hello ' + proxy.$attrs.a),
-            h('a', proxy.$attrs.b)
-          ])
+        render() {
+          setTimeout(() => {
+            debugger
+            this.age++
+            debugger
+            this.age++
+          }, 1000)
+          return h('div', [h(Text, 'hello ' + this.name), h('a', this.age)])
         }
       }
 
       // 组件由两个虚拟节点组成
       // render函数返回的虚拟节点
-      render(h(VueComponent, { a: 1, b: 2, name: 'hs', age: 18 }), app)
+      render(h(VueComponent), app)
     </script>
   </body>
 </html>

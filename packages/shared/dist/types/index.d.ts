@@ -22,5 +22,6 @@ export declare function isString(value: any): value is string;
  * @returns 是否为虚拟节点
  */
 export declare function isVNode(value: any): any;
+export declare const hasOwn: (value: any, key: any) => boolean;
 export * from './shapeFlags.js';
 //# sourceMappingURL=index.d.ts.map

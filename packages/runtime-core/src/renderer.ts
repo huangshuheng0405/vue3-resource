@@ -1,7 +1,9 @@
-import { ShapeFlags } from '@myvue/shared'
+// @ts-nocheck
+import { ShapeFlags, hasOwn } from '@myvue/shared'
 import { Fragment, isSameVnode, Text } from './createVnode.js'
 import { getSequence } from './LIS.js'
 import { reactive, ReactiveEffect } from '@myvue/reactivity'
+import { queueJob } from './scheduler.js'
 
 /**
  * 把vnode渲染成真实dom
@@ -125,7 +127,7 @@ export function createRenderer(renderOptions: any) {
   }
 
   /**
-   * 比较两个儿子的差异 更新el
+   * 新旧元素都是数组 diff算法
    * @param c1 旧的子节点数组
    * @param c2 新的子节点数组
    * @param el 元素
@@ -135,11 +137,13 @@ export function createRenderer(renderOptions: any) {
     // 1. 减少比对范围 先从头开始比 再从尾开始比较  确定不一样的范围
     // 2. 从头比对 再从尾比对 如果有多余的或者新增的直接操作即可
 
-    // [a,b,c] [a,b,d,e]
     let i = 0 // 开始比对的索引
     let e1 = c1.length - 1 // 旧的子节点数组的结束索引
     let e2 = c2.length - 1 // 新的子节点数组的结束索引
 
+    // 从头比对
+    // (a b) c
+    // (a b) d e
     while (i <= e1 && i <= e2) {
       const n1 = c1[i]
       const n2 = c2[i]
@@ -152,6 +156,9 @@ export function createRenderer(renderOptions: any) {
       i++
     }
 
+    // 从尾对比
+    // a (b c)
+    // d e (b c)
     while (i <= e1 && i <= e2) {
       const n1 = c1[e1]
       const n2 = c2[e2]
@@ -173,13 +180,13 @@ export function createRenderer(renderOptions: any) {
     // a b
     // c a b => i = 0 e1=-1 e2=0 => i>e1 && i<=e2
 
+    // 旧的遍历完了，新的还有剩余 说明需要挂载新节点
     if (i > e1) {
       // 新的多
       if (i <= e2) {
         // 有插入的部分
         // insert
         let nextPos = e2 + 1 // 看一下当前下一个元素是否存在
-
         let anchor = c2[nextPos]?.el
 
         while (i <= e2) {
@@ -190,6 +197,7 @@ export function createRenderer(renderOptions: any) {
 
       // a,b,c,d,e,f
       // a,b  =>  i = 2  e1 = 5  e2 = 1   i <= e1 都是要插入的
+      // 新的遍历完，旧的还有剩余，说明需要卸载旧节点
     } else if (i > e2) {
       if (i <= e1) {
         // c,a,b
@@ -206,14 +214,18 @@ export function createRenderer(renderOptions: any) {
       let s1 = i
       let s2 = i
 
+      // a b c d
+      // b a e c
+
       const keyToNewIndexMap = new Map() // 做一个映射表用于快速查找 看老的是否在新的里面还有  没有就删除 有的话就更新
 
       // 插入的过程中 可能新的元素多 需要创建
-      let toBePatched = e2 - s2 + 1 // 要倒序插入的个数
+      let toBePatched = e2 - s2 + 1 // 要倒序插入的个数 加1是因为数组下标从0开始
 
       // 根据新的节点 找到老的对应位置
       let newIndexToOldMapIndex = new Array(toBePatched).fill(0)
 
+      // 遍历新的节点 存储新的节点的key的索引关系
       for (let i = s2; i <= e2; i++) {
         const vnode = c2[i]
         keyToNewIndexMap.set(vnode.key, i)
@@ -221,7 +233,7 @@ export function createRenderer(renderOptions: any) {
 
       for (let i = s1; i <= e1; i++) {
         const vnode = c1[i]
-        const newIndex = keyToNewIndexMap.get(vnode.key) // 通过key找对应的索引
+        const newIndex = keyToNewIndexMap.get(vnode.key) // 旧节点在新数组的索引
 
         if (newIndex == undefined) {
           // 如果新的里面找不到说明 老的有 新的没有 要删除
@@ -230,7 +242,7 @@ export function createRenderer(renderOptions: any) {
           // 比较前后节点的差异 更新属性和儿子
           // i 可能是0的情况 为了保证0是没有比对过的元素 直接 i + 1
           newIndexToOldMapIndex[newIndex - s2] = i + 1
-          patch(vnode, c2[newIndex], el) // 复用
+          patch(vnode, c2[newIndex], el) // 复用 直接更新即可
         }
       }
 
@@ -243,8 +255,6 @@ export function createRenderer(renderOptions: any) {
 
       // 倒序插入
       for (let i = toBePatched - 1; i >= 0; i--) {
-        console.log(i)
-
         let newIndex = s2 + i // h 对应的索引 找下一个元素为参照物 来进行插入
 
         let anchor = c2[newIndex + 1]?.el
@@ -283,27 +293,31 @@ export function createRenderer(renderOptions: any) {
     // 5. 老的是文本 新的是空
     // 6. 老的是文本 新的是数组
     if (curShapeFlag & ShapeFlags.TEXT_CHILDREN) {
-      // 文本
+      // 情况1
       if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
         unmountChildren(c1)
       }
-
+      // 情况2
       if (c1 !== c2) {
         hostSetElementText(el, c2)
       }
     } else {
       if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+        // 情况3
         if (curShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
           // 全量 diff 算法 两个数组的比对
           patchKeyedChildren(c1, c2, el)
         } else {
+          // 情况4
           unmountChildren(c1)
         }
       } else {
+        // 情况5
         if (prevShapeFlag & ShapeFlags.TEXT_CHILDREN) {
           hostSetElementText(el, '')
         }
 
+        // 情况6
         if (curShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
           mountChildren(c2, el)
         }
@@ -332,6 +346,12 @@ export function createRenderer(renderOptions: any) {
     patchChildren(n1, n2, el)
   }
 
+  /**
+   * 处理文本节点
+   * @param vnode1 旧的虚拟节点
+   * @param vnode2 新的虚拟节点
+   * @param container 容器元素
+   */
   const processText = (vnode1: any, vnode2: any, container: any) => {
     if (vnode1 == null) {
       // 虚拟节点要关联真实节点 将节点插入到页面当中
@@ -344,17 +364,60 @@ export function createRenderer(renderOptions: any) {
     }
   }
 
+  /**
+   * 处理fragment节点
+   * @param vnode1 旧的虚拟节点
+   * @param vnode2 新的虚拟节点
+   * @param container 容器元素
+   */
   const processFragment = (vnode1: any, vnode2: any, container: any) => {
     if (vnode1 == null) {
+      // fragment节点的挂载
       mountChildren(vnode2.children, container)
     } else {
+      // fragment节点的更新
       patchChildren(vnode1, vnode2, container)
     }
   }
 
-  const mountcomponent = (vnode2: any, container: any, anchor: any) => {
+  /**
+   * 初始化属性
+   * @param instance 组件实例
+   * @param propsOptions 虚拟节点的属性
+   */
+  const initProps = (instance: any, rawProps: any) => {
+    const props = {}
+    const attrs = {}
+
+    const propsOptions = instance.propsOptions || {}
+    if (rawProps) {
+      for (let key in rawProps) {
+        // 用所有的来分裂
+        const value = rawProps[key]
+
+        if (key in propsOptions) {
+          // @ts-ignore
+          props[key] = value // props 不需要深度响应式 最好用shallowReactive（这里还没实现）
+        } else {
+          // @ts-ignore
+          attrs[key] = value
+        }
+      }
+    }
+    instance.props = reactive(props)
+    instance.attrs = attrs
+    console.log('🚀 ~ initProps ~ instance:', instance)
+  }
+
+  /**
+   * 挂载组件
+   * @param vnode2 组件的虚拟节点
+   * @param container 容器元素
+   * @param anchor 锚点元素
+   */
+  const mountComponent = (vnode2: any, container: any, anchor: any) => {
     // 组件可以基于自己的状态重新渲染
-    const { data = () => {}, render } = vnode2.type
+    const { data = () => {}, render, props: propsOptions = {} } = vnode2.type
 
     const state = reactive(data())
 
@@ -363,26 +426,81 @@ export function createRenderer(renderOptions: any) {
       vnode: vnode2, // 组件的虚拟节点
       subTree: null, // 子树
       isMounted: false, // 是否挂载完成
-      update: null // 组件的更新函数
+      update: null, // 组件的更新函数
+      props: {},
+      attrs: {},
+      propsOptions,
+      component: null,
+      proxy: null // 用来代理 props  attrs data 让用户更方便使用
     }
+
+    // 根据 propsOptions 来区分出 props attrs
+    vnode2.component = instance
+    // 元素更新 n2.el = n1.el
+    // 组件更新 n2.component.el = n1.component.subTree.el
+    initProps(instance, vnode2.props)
+
+    console.log(instance)
+    // 代理 props  attrs data 让用户更方便使用
+    // @ts-ignore
+
+    // 通过映射关系 来获取到不同的属性
+    const publicPropety = {
+      $attrs: (instance) => instance.attrs,
+      $slots: (instance) => instance.vnode.slots
+    }
+
+    instance.proxy = new Proxy(instance, {
+      get(target, key) {
+        // data 和 props 属性中的名字不要重名
+        const { state, props } = target
+
+        if (state && hasOwn(state, key)) {
+          return state[key]
+        } else if (props && hasOwn(props, key)) {
+          return props[key]
+        }
+
+        // 对于一些无法修改的属性 $slots $attrs ....  $attrs -> instance.attrs
+        const getter = publicPropety[key] // 通过不同的策略拿到不同的方法
+        if (getter) {
+          return getter(target)
+        }
+        return target[key]
+      },
+      set(target, p, newValue, receiver) {
+        const { state, props } = target
+
+        if (state && hasOwn(state, key)) {
+          state[key] = newValue
+        } else if (props && hasOwn(props, key)) {
+          // props[key] = newValue
+          // 用户可以修改属性的嵌套属性 内部不会报错 但是不合法
+          console.warn('props are readonly')
+          return false
+        }
+
+        return true
+      }
+    })
 
     const componentUpdateFn = () => {
       // 我们要在这里面区分 是第一次 还是 后续更新
       if (!instance.isMounted) {
-        const subTree = render.call(state, state)
+        const subTree = render.call(instance.proxy, instance.proxy)
         instance.subTree = subTree
         instance.isMounted = true
         patch(null, subTree, container, anchor)
       } else {
         // 基于状态的组件更新
-        const subTree = render.call(state, state)
+        const subTree = render.call(instance.proxy, instance.proxy)
         patch(instance.subTree, subTree, container, anchor)
         instance.subTree = subTree
       }
     }
 
     let effect = new ReactiveEffect(componentUpdateFn, () => {
-      update()
+      queueJob(update)
     })
 
     // @ts-ignore
@@ -392,6 +510,13 @@ export function createRenderer(renderOptions: any) {
     update()
   }
 
+  /**
+   * 处理组件
+   * @param vnode1 旧的虚拟节点
+   * @param vnode2 新的虚拟节点
+   * @param container 容器元素
+   * @param anchor 锚点元素
+   */
   const processComponent = (
     vnode1: any,
     vnode2: any,
@@ -400,7 +525,7 @@ export function createRenderer(renderOptions: any) {
   ) => {
     if (vnode1 === null) {
       // 组件的挂载
-      mountcomponent(vnode2, container, anchor)
+      mountComponent(vnode2, container, anchor)
     } else {
       // 组建的关系
     }
@@ -409,8 +534,8 @@ export function createRenderer(renderOptions: any) {
   // 渲染走这里 更新也走这里
   /**
    * 更新虚拟节点
-   * @param n1 旧的虚拟节点
-   * @param n2 新的虚拟节点
+   * @param vnode1 旧的虚拟节点
+   * @param vnode2 新的虚拟节点
    * @param container 容器元素
    * @returns
    */
@@ -431,6 +556,7 @@ export function createRenderer(renderOptions: any) {
       vnode1 = null // 当作首次挂载处理
     }
 
+    // 增加了 处理 文本 fragment 组件 的情况
     const { type, shapeFlag } = vnode2
     switch (type) {
       case Text:
@@ -451,8 +577,8 @@ export function createRenderer(renderOptions: any) {
   }
 
   /**
-   *
-   * @param vnode 移除节点
+   * 移除虚拟节点
+   * @param vnode 虚拟节点
    */
   const unmount = (vnode: any) => {
     if (vnode.type === Fragment) {

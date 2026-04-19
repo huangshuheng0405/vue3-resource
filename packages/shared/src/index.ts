@@ -34,4 +34,8 @@ export function isVNode(value: any) {
   return value.__v_isVnode
 }
 
+const hasOwnProperty = Object.prototype.hasOwnProperty
+
+export const hasOwn = (value: any, key: any) => hasOwnProperty.call(value, key)
+
 export * from './shapeFlags.js'

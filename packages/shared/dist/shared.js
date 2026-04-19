@@ -27,8 +27,11 @@ function isString(value) {
 function isVNode(value) {
   return value.__v_isVnode;
 }
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+var hasOwn = (value, key) => hasOwnProperty.call(value, key);
 export {
   ShapeFlags,
+  hasOwn,
   isFunction,
   isObject,
   isString,
