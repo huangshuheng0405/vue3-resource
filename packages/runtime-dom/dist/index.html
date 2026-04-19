@@ -32,10 +32,7 @@
         render(proxy) {
           console.log('🚀 ~ proxy:', proxy)
 
-          return h('div', [
-            h(Text, 'hello ' + proxy.$attrs.a),
-            h('a', proxy.$attrs.b)
-          ])
+          return h('div', [h(Text, 'hello ' + proxy.name), h('a', proxy.age)])
         }
       }
 

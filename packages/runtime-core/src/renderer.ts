@@ -1,9 +1,9 @@
-// @ts-nocheck
 import { ShapeFlags, hasOwn } from '@myvue/shared'
 import { Fragment, isSameVnode, Text } from './createVnode.js'
 import { getSequence } from './LIS.js'
 import { reactive, ReactiveEffect } from '@myvue/reactivity'
 import { queueJob } from './scheduler.js'
+import { createComponentInstance, setupComponent } from './components.js'
 
 /**
  * 把vnode渲染成真实dom
@@ -380,109 +380,8 @@ export function createRenderer(renderOptions: any) {
     }
   }
 
-  /**
-   * 初始化属性
-   * @param instance 组件实例
-   * @param propsOptions 虚拟节点的属性
-   */
-  const initProps = (instance: any, rawProps: any) => {
-    const props = {}
-    const attrs = {}
-
-    const propsOptions = instance.propsOptions || {}
-    if (rawProps) {
-      for (let key in rawProps) {
-        // 用所有的来分裂
-        const value = rawProps[key]
-
-        if (key in propsOptions) {
-          // @ts-ignore
-          props[key] = value // props 不需要深度响应式 最好用shallowReactive（这里还没实现）
-        } else {
-          // @ts-ignore
-          attrs[key] = value
-        }
-      }
-    }
-    instance.props = reactive(props)
-    instance.attrs = attrs
-    console.log('🚀 ~ initProps ~ instance:', instance)
-  }
-
-  /**
-   * 挂载组件
-   * @param vnode2 组件的虚拟节点
-   * @param container 容器元素
-   * @param anchor 锚点元素
-   */
-  const mountComponent = (vnode2: any, container: any, anchor: any) => {
-    // 组件可以基于自己的状态重新渲染
-    const { data = () => {}, render, props: propsOptions = {} } = vnode2.type
-
-    const state = reactive(data())
-
-    const instance = {
-      state, // 状态
-      vnode: vnode2, // 组件的虚拟节点
-      subTree: null, // 子树
-      isMounted: false, // 是否挂载完成
-      update: null, // 组件的更新函数
-      props: {},
-      attrs: {},
-      propsOptions,
-      component: null,
-      proxy: null // 用来代理 props  attrs data 让用户更方便使用
-    }
-
-    // 根据 propsOptions 来区分出 props attrs
-    vnode2.component = instance
-    // 元素更新 n2.el = n1.el
-    // 组件更新 n2.component.el = n1.component.subTree.el
-    initProps(instance, vnode2.props)
-
-    console.log(instance)
-    // 代理 props  attrs data 让用户更方便使用
-    // @ts-ignore
-
-    // 通过映射关系 来获取到不同的属性
-    const publicPropety = {
-      $attrs: (instance) => instance.attrs,
-      $slots: (instance) => instance.vnode.slots
-    }
-
-    instance.proxy = new Proxy(instance, {
-      get(target, key) {
-        // data 和 props 属性中的名字不要重名
-        const { state, props } = target
-
-        if (state && hasOwn(state, key)) {
-          return state[key]
-        } else if (props && hasOwn(props, key)) {
-          return props[key]
-        }
-
-        // 对于一些无法修改的属性 $slots $attrs ....  $attrs -> instance.attrs
-        const getter = publicPropety[key] // 通过不同的策略拿到不同的方法
-        if (getter) {
-          return getter(target)
-        }
-        return target[key]
-      },
-      set(target, p, newValue, receiver) {
-        const { state, props } = target
-
-        if (state && hasOwn(state, key)) {
-          state[key] = newValue
-        } else if (props && hasOwn(props, key)) {
-          // props[key] = newValue
-          // 用户可以修改属性的嵌套属性 内部不会报错 但是不合法
-          console.warn('props are readonly')
-          return false
-        }
-
-        return true
-      }
-    })
+  function setupRenderEffect(instance: any, container: any, anchor: any) {
+    const { render } = instance
 
     const componentUpdateFn = () => {
       // 我们要在这里面区分 是第一次 还是 后续更新
@@ -508,6 +407,23 @@ export function createRenderer(renderOptions: any) {
       effect.run()
     })
     update()
+  }
+
+  /**
+   * 挂载组件
+   * @param vnode2 组件的虚拟节点
+   * @param container 容器元素
+   * @param anchor 锚点元素
+   */
+  const mountComponent = (vnode2: any, container: any, anchor: any) => {
+    // 1. 先创建组件实例
+    const instance = (vnode2.component = createComponentInstance(vnode2))
+
+    // 2. 给实例属性赋值
+    setupComponent(instance)
+
+    // 3. 创建一个effect
+    setupRenderEffect(instance, container, anchor)
   }
 
   /**

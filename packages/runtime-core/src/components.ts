@@ -1,0 +1,103 @@
+import { reactive } from '@myvue/reactivity'
+import { hasOwn, isFunction } from '@myvue/shared'
+
+export function createComponentInstance(vnode: any) {
+  const instance = {
+    data: null, // 状态
+    vnode: vnode, // 组件的虚拟节点
+    subTree: null, // 子树
+    isMounted: false, // 是否挂载完成
+    update: null, // 组件的更新函数
+    props: {},
+    attrs: {},
+    propsOptions: vnode.type.props, // 用户声明的哪些属性是组件属性
+    component: null,
+    proxy: null // 用来代理 props  attrs data 让用户更方便使用
+  }
+
+  return instance
+}
+
+/**
+ * 初始化属性
+ * @param instance 组件实例
+ * @param propsOptions 虚拟节点的属性
+ */
+const initProps = (instance: any, rawProps: any) => {
+  const props = {}
+  const attrs = {}
+
+  const propsOptions = instance.propsOptions || {}
+  if (rawProps) {
+    for (let key in rawProps) {
+      // 用所有的来分裂
+      const value = rawProps[key]
+
+      if (key in propsOptions) {
+        // @ts-ignore
+        props[key] = value // props 不需要深度响应式 最好用shallowReactive（这里还没实现）
+      } else {
+        // @ts-ignore
+        attrs[key] = value
+      }
+    }
+  }
+  instance.props = reactive(props)
+  instance.attrs = attrs
+}
+
+// 通过映射关系 来获取到不同的属性
+const publicPropety: any = {
+  $attrs: (instance: any) => instance.attrs,
+  $slots: (instance: any) => instance.vnode.slots
+}
+
+const handler = {
+  get(target: any, key: any) {
+    // data 和 props 属性中的名字不要重名
+    const { data, props } = target
+
+    if (data && hasOwn(data, key)) {
+      return data[key]
+    } else if (props && hasOwn(props, key)) {
+      return props[key]
+    }
+
+    // 对于一些无法修改的属性 $slots $attrs ....  $attrs -> instance.attrs
+    const getter: any = publicPropety[key] // 通过不同的策略拿到不同的方法
+    if (getter) {
+      return getter(target)
+    }
+    return target[key]
+  },
+  set(target: any, key: any, newValue: any, receiver: any) {
+    const { data, props } = target
+
+    if (data && hasOwn(data, key)) {
+      data[key] = newValue
+    } else if (props && hasOwn(props, key)) {
+      // props[key] = newValue
+      // 用户可以修改属性的嵌套属性 内部不会报错 但是不合法
+      console.warn('props are readonly')
+      return false
+    }
+
+    return true
+  }
+}
+
+export function setupComponent(instance: any) {
+  const { vnode } = instance
+  // 属性赋值
+  initProps(instance, vnode.props)
+  // 赋值代理对象
+  instance.proxy = new Proxy(instance, handler)
+
+  const { data, render } = vnode.type
+  if (isFunction(data)) {
+    instance.data = reactive(data.call(instance.proxy))
+    instance.render = render
+  } else {
+    return console.warn('data option must be a function')
+  }
+}
