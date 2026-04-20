@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "description": "Runtime core utils for Vue 3",
   "type": "module",
-  "types": "dist/types/index.d.ts",
+  "types": "dist/runtime-core.d.ts",
   "main": "index.js",
   "module": "dist/runtime-core.js",
   "unpkg": "dist/runtime-core.global.js",
   "scripts": {
     "dev:ts": "tsc -w",
-    "build": "node build.js"
+    "dts": "dts-bundle-generator -o dist/runtime-core.d.ts src/index.ts --no-check"
   },
   "buildOptions": {
     "name": "RuntimeCore",

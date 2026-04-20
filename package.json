@@ -5,10 +5,8 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev:runtime-dom": "node scripts/dev.js runtime-dom -f esm",
-    "dev:runtime-core": "node scripts/dev.js runtime-core -f esm",
-    "dev:reactivity": "node scripts/dev.js reactivity -f esm",
-    "dev:shared": "node scripts/dev.js shared -f esm",
+    "dev:core": "node scripts/dev.js runtime-core -f esm",
+    "dev:dom": "node scripts/dev.js runtime-dom -f esm",
     "build": "node scripts/build.js",
     "commit": "git-cz"
   },
@@ -26,13 +24,14 @@
     "vue": "3.4.23"
   },
   "devDependencies": {
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0",
+    "commitizen": "^4.3.1",
+    "commitlint": "^20.5.0",
     "cz-git": "^1.12.0",
+    "dts-bundle-generator": "^9.5.1",
     "esbuild": "^0.28.0",
     "minimist": "^1.2.8",
-    "typescript": "^6.0.2",
-    "@commitlint/config-conventional": "^20.5.0",
-    "@commitlint/cli": "^20.5.0",
-    "commitlint": "^20.5.0",
-    "commitizen": "^4.3.1"
+    "typescript": "^6.0.2"
   }
 }

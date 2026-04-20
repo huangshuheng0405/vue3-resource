@@ -1,4 +1,4 @@
-import { reactive } from '@myvue/reactivity'
+import { proxyRefs, reactive } from '@myvue/reactivity'
 import { hasOwn, isFunction } from '@myvue/shared'
 
 /**
@@ -17,7 +17,8 @@ export function createComponentInstance(vnode: any) {
     attrs: {},
     propsOptions: vnode.type.props, // 用户声明的哪些属性是组件属性
     component: null,
-    proxy: null // 用来代理 props  attrs data 让用户更方便使用
+    proxy: null, // 用来代理 props  attrs data 让用户更方便使用
+    setupState: null
   }
 
   return instance
@@ -59,14 +60,29 @@ export function setupComponent(instance: any) {
   // 赋值代理对象
   instance.proxy = new Proxy(instance, handler)
 
-  const { data = () => {}, render } = vnode.type
+  const { data = () => {}, render, setup } = vnode.type
+  if (setup) {
+    const setupContext = {}
+    const setupResult = setup(instance.props, setupContext)
+
+    if (isFunction(setupResult)) {
+      instance.render = setupResult
+    } else {
+      instance.setupState = proxyRefs(setupResult) // 将返回的值脱ref
+    }
+  }
+
   if (!isFunction(data)) {
     return console.warn('data option must be a function')
   } else {
     // data 必须是函数
     instance.data = reactive(data.call(instance.proxy))
   }
-  instance.render = render // render赋值
+
+  if (!instance.render) {
+    // 没有render用自己的render
+    instance.render = render // render赋值
+  }
 }
 
 // 通过映射关系 来获取到不同的属性
@@ -78,12 +94,14 @@ const publicPropety: any = {
 const handler = {
   get(target: any, key: any) {
     // data 和 props 属性中的名字不要重名
-    const { data, props } = target
+    const { data, props, setupState } = target
 
     if (data && hasOwn(data, key)) {
       return data[key]
     } else if (props && hasOwn(props, key)) {
       return props[key]
+    } else if (setupState && hasOwn(setupState, key)) {
+      return setupState[key]
     }
 
     // 对于一些无法修改的属性 $slots $attrs ....  $attrs -> instance.attrs
@@ -94,7 +112,7 @@ const handler = {
     return target[key]
   },
   set(target: any, key: any, newValue: any, receiver: any) {
-    const { data, props } = target
+    const { data, props, setupState } = target
 
     if (data && hasOwn(data, key)) {
       data[key] = newValue
@@ -103,6 +121,9 @@ const handler = {
       // 用户可以修改属性的嵌套属性 内部不会报错 但是不合法
       console.warn('props are readonly')
       return false
+    } else if (setupState && hasOwn(setupState, key)) {
+      setupState[key] = newValue
+      // return false
     }
 
     return true

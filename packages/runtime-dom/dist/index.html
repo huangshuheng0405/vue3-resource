@@ -13,39 +13,28 @@
       //   render,
       //   h,
       //   Text,
+      //   ref,
       //   Fragment
       // } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js'
-      import { render, h, Text, Fragment } from './runtime-dom.js'
+      import { render, h, Text, Fragment, ref } from './runtime-dom.js'
       const app = document.querySelector('.app')
 
-      // 组件更新 有三种方式 状态 属性 插槽
-
-      const RenderComponent = {
-        props: {
-          address: String
-        },
-        render() {
-          return h(Text, this.address)
-        }
-      }
+      // setup 每个组件只会执行一次 可以放入我们的composition  api
+      // 解决反复横跳问题
 
       const VueComponent = {
-        data() {
-          return {
-            flag: true
+        // 提供渲染逻辑
+        setup(props, { emit, attrs, expose }) {
+          const a = ref(1)
+          setTimeout(() => {
+            a.value = 2
+          }, 1000)
+          // return {
+          //   a: a
+          // }
+          return (proxy) => {
+            return h('div', a.value)
           }
-        },
-        render() {
-          return h(Fragment, [
-            h(
-              'button',
-              { onClick: () => (this.flag = !this.flag) },
-              'click me'
-            ),
-            h(RenderComponent, {
-              address: this.flag ? 'beijing' : 'shanghai'
-            })
-          ])
         }
       }
 
