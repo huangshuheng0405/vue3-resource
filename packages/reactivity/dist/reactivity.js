@@ -2,7 +2,7 @@ var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
-// src/constants.ts
+// packages/reactivity/src/constants.ts
 var ReactiveFlags = /* @__PURE__ */ ((ReactiveFlags2) => {
   ReactiveFlags2["IS_REACTIVE"] = "__v_isReactive";
   return ReactiveFlags2;
@@ -19,7 +19,7 @@ function isReactive(value) {
   return value["__v_isReactive" /* IS_REACTIVE */];
 }
 
-// src/effect.ts
+// packages/reactivity/src/effect.ts
 function effect(fn, options) {
   const _effect = new ReactiveEffect(fn, () => {
     _effect.run();
@@ -136,12 +136,12 @@ var triggerEffect = (dep) => {
   }
 };
 
-// ../shared/src/index.ts
+// packages/shared/src/index.ts
 function isObject(value) {
   return typeof value === "object" && value !== null;
 }
 
-// src/reactiveEffect.ts
+// packages/reactivity/src/reactiveEffect.ts
 var targetMap = /* @__PURE__ */ new WeakMap();
 var createDep = (cleanup, key) => {
   const dep = /* @__PURE__ */ new Map();
@@ -176,7 +176,7 @@ function trigger(target, key, newValue, oldValue) {
   triggerEffect(dep);
 }
 
-// src/baseHandler.ts
+// packages/reactivity/src/baseHandler.ts
 var mutableHandlers = {
   get(target, key, receiver) {
     if (key === "__v_isReactive" /* IS_REACTIVE */) {
@@ -199,7 +199,7 @@ var mutableHandlers = {
   }
 };
 
-// src/reactive.ts
+// packages/reactivity/src/reactive.ts
 var reactiveMap = /* @__PURE__ */ new WeakMap();
 function createReactiveObject(target) {
   if (!isObject(target)) {
@@ -223,7 +223,7 @@ function toReactive(value) {
   return isObject(value) ? reactive(value) : value;
 }
 
-// src/ref.ts
+// packages/reactivity/src/ref.ts
 function ref(value) {
   return createRef(value);
 }
@@ -306,7 +306,7 @@ function proxyRefs(objectWithRef) {
   });
 }
 
-// ../shared/dist/shared.mjs
+// packages/shared/dist/shared.js
 function isObject2(value) {
   return typeof value === "object" && value !== null;
 }
@@ -314,7 +314,7 @@ function isFunction(value) {
   return typeof value === "function";
 }
 
-// src/computed.ts
+// packages/reactivity/src/computed.ts
 var ComputedRefImpl = class {
   constructor(getter, setter) {
     __publicField(this, "setter", setter);
@@ -353,7 +353,7 @@ function computed(getterOrOptions) {
   return new ComputedRefImpl(getter, setter);
 }
 
-// src/apiWatch.ts
+// packages/reactivity/src/apiWatch.ts
 function watch(source, callback, options = {}) {
   return doWatch(source, callback, options);
 }

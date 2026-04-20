@@ -1,4 +1,4 @@
-// src/shapeFlags.ts
+// packages/shared/src/shapeFlags.ts
 var ShapeFlags = /* @__PURE__ */ ((ShapeFlags2) => {
   ShapeFlags2[ShapeFlags2["ELEMENT"] = 1] = "ELEMENT";
   ShapeFlags2[ShapeFlags2["FUNCTIONAL_COMPONENT"] = 2] = "FUNCTIONAL_COMPONENT";
@@ -14,7 +14,7 @@ var ShapeFlags = /* @__PURE__ */ ((ShapeFlags2) => {
   return ShapeFlags2;
 })(ShapeFlags || {});
 
-// src/index.ts
+// packages/shared/src/index.ts
 function isObject(value) {
   return typeof value === "object" && value !== null;
 }

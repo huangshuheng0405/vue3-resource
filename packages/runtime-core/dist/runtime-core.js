@@ -1,4 +1,4 @@
-// ../shared/dist/shared.js
+// packages/shared/dist/shared.js
 var ShapeFlags = /* @__PURE__ */ ((ShapeFlags22) => {
   ShapeFlags22[ShapeFlags22["ELEMENT"] = 1] = "ELEMENT";
   ShapeFlags22[ShapeFlags22["FUNCTIONAL_COMPONENT"] = 2] = "FUNCTIONAL_COMPONENT";
@@ -28,25 +28,30 @@ function isVNode(value) {
 var hasOwnProperty = Object.prototype.hasOwnProperty;
 var hasOwn = (value, key) => hasOwnProperty.call(value, key);
 
-// src/createVnode.ts
+// packages/runtime-core/src/createVnode.ts
 function createVNode(type, props, children) {
   const shapeFlag = isString(type) ? ShapeFlags.ELEMENT : isObject(type) ? ShapeFlags.STATEFUL_COMPONENT : 0;
   const vnode = {
     __v_isVnode: true,
+    // 虚拟节点标识
     type,
+    // 节点类型（元素名/组件对象/Text/Fragment）（元素名/组件对象/Text/Fragment）
     props,
+    // 属性  class/style/onClick/自定义 props）
     children,
+    // 孩子 文本/数组/空
     key: props?.key,
-    // diff算法后面需要的key
+    // diff 用来判断是否同一个节点，以及做列表 diff
     el: null,
-    // 虚拟节点需要的真实节点是谁
+    // 将来挂载后对应的真实 DOM 节点（mount 时会赋值）
     shapeFlag
+    // 上面算出来的类型标记
   };
   if (children) {
     if (Array.isArray(children)) {
       vnode.shapeFlag |= ShapeFlags.ARRAY_CHILDREN;
     } else {
-      children = String(children);
+      vnode.children = String(children);
       vnode.shapeFlag |= ShapeFlags.TEXT_CHILDREN;
     }
   }
@@ -58,7 +63,7 @@ function isSameVnode(n1, n2) {
 var Text = /* @__PURE__ */ Symbol("Text");
 var Fragment = /* @__PURE__ */ Symbol("Fragment");
 
-// src/h.ts
+// packages/runtime-core/src/h.ts
 function h(type, propsOrChildren, children) {
   let l = arguments.length;
   if (l === 2) {
@@ -81,7 +86,7 @@ function h(type, propsOrChildren, children) {
   }
 }
 
-// src/LIS.ts
+// packages/runtime-core/src/LIS.ts
 function getSequence(arr) {
   const result = [0];
   const len = arr.length;
@@ -121,7 +126,7 @@ function getSequence(arr) {
   return result;
 }
 
-// ../reactivity/dist/reactivity.js
+// packages/reactivity/dist/reactivity.js
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
@@ -308,7 +313,7 @@ function reactive(target) {
   return createReactiveObject(target);
 }
 
-// src/scheduler.ts
+// packages/runtime-core/src/scheduler.ts
 var queue = [];
 var isFlushing = false;
 var resolvePromsie = Promise.resolve();
@@ -328,7 +333,7 @@ function queueJob(job) {
   }
 }
 
-// src/components.ts
+// packages/runtime-core/src/components.ts
 function createComponentInstance(vnode) {
   const instance = {
     data: null,
@@ -368,6 +373,19 @@ var initProps = (instance, rawProps) => {
   instance.props = reactive(props);
   instance.attrs = attrs;
 };
+function setupComponent(instance) {
+  const { vnode } = instance;
+  initProps(instance, vnode.props);
+  instance.proxy = new Proxy(instance, handler);
+  const { data = () => {
+  }, render } = vnode.type;
+  if (!isFunction(data)) {
+    return console.warn("data option must be a function");
+  } else {
+    instance.data = reactive(data.call(instance.proxy));
+  }
+  instance.render = render;
+}
 var publicPropety = {
   $attrs: (instance) => instance.attrs,
   $slots: (instance) => instance.vnode.slots
@@ -397,20 +415,8 @@ var handler = {
     return true;
   }
 };
-function setupComponent(instance) {
-  const { vnode } = instance;
-  initProps(instance, vnode.props);
-  instance.proxy = new Proxy(instance, handler);
-  const { data, render } = vnode.type;
-  if (isFunction(data)) {
-    instance.data = reactive(data.call(instance.proxy));
-    instance.render = render;
-  } else {
-    return console.warn("data option must be a function");
-  }
-}
 
-// src/renderer.ts
+// packages/runtime-core/src/renderer.ts
 function createRenderer(renderOptions) {
   const {
     insert: hostInsert,
@@ -598,6 +604,11 @@ function createRenderer(renderOptions) {
       patchChildren(vnode1, vnode2, container);
     }
   };
+  const updateComponentPreRender = (instance, next) => {
+    instance.next = null;
+    instance.vnode = next;
+    updateProps(instance, instance.props, next.props);
+  };
   function setupRenderEffect(instance, container, anchor) {
     const { render: render2 } = instance;
     const componentUpdateFn = () => {
@@ -607,6 +618,10 @@ function createRenderer(renderOptions) {
         instance.isMounted = true;
         patch(null, subTree, container, anchor);
       } else {
+        const { next } = instance;
+        if (next) {
+          updateComponentPreRender(instance, next);
+        }
         const subTree = render2.call(instance.proxy, instance.proxy);
         patch(instance.subTree, subTree, container, anchor);
         instance.subTree = subTree;
@@ -625,10 +640,50 @@ function createRenderer(renderOptions) {
     setupComponent(instance);
     setupRenderEffect(instance, container, anchor);
   };
+  const hasPropsChance = (prevProps, nextProps) => {
+    let nKeys = Object.keys(nextProps);
+    if (Object.keys(prevProps).length !== Object.keys(nextProps).length) {
+      return true;
+    }
+    for (let i = 0; i < nKeys.length; i++) {
+      const key = nKeys[i];
+      if (prevProps[key] !== nextProps[key]) {
+        return true;
+      }
+    }
+    return false;
+  };
+  const updateProps = (instance, prevProps, nextProps) => {
+    if (hasPropsChance(prevProps, nextProps)) {
+      for (let key in nextProps) {
+        instance.props[key] = nextProps[key];
+      }
+      for (let key in instance.props) {
+        if (!(key in nextProps)) {
+          delete instance.props[key];
+        }
+      }
+    }
+  };
+  const shouldComponentUpdate = (vnode1, vnode2) => {
+    const { props: prevProp, children: prevChildren } = vnode1;
+    const { props: nextProps, children: nextChildren } = vnode2;
+    if (prevChildren || nextChildren) return true;
+    if (prevProp === nextProps) return false;
+    return hasPropsChance(prevProp, nextProps);
+  };
+  const updateComponent = (vnode1, vnode2) => {
+    const instance = vnode2.component = vnode1.component;
+    if (shouldComponentUpdate(vnode1, vnode2)) {
+      instance.next = vnode2;
+      instance.update();
+    }
+  };
   const processComponent = (vnode1, vnode2, container, anchor) => {
     if (vnode1 === null) {
       mountComponent(vnode2, container, anchor);
     } else {
+      updateComponent(vnode1, vnode2);
     }
   };
   const patch = (vnode1, vnode2, container, anchor = null) => {

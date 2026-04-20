@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div class="app"></div>
+    <script type="module">
+      //   import {
+      //     createRenderer,
+      //     render,
+      //     h,
+      //     Text,
+      //     Fragment
+      //   } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js'
+      import { render, h, Text, Fragment } from './runtime-dom.js'
+      const app = document.querySelector('.app')
+
+      const VueComponent = {
+        props: {
+          name: String,
+          age: Number
+        },
+        data() {
+          return {
+            x: 1,
+            y: 2
+          }
+        },
+        render(proxy) {
+          console.log('🚀 ~ proxy:', proxy)
+
+          return h('div', [h(Text, 'hello ' + proxy.name), h('a', proxy.age)])
+        }
+      }
+
+      // 组件由两个虚拟节点组成
+      // render函数返回的虚拟节点
+      render(h(VueComponent, { a: 1, b: 2, name: 'hs', age: 18 }), app)
+    </script>
+  </body>
+</html>

@@ -2,35 +2,35 @@ import { isObject, isString, ShapeFlags } from '@myvue/shared'
 
 /**
  * 创建虚拟节点
- * @param type 节点类型 'div'
+ * @param type 节点类型 字符串（div）或者 对象（data() render()）  其余情况先给0
  * @param props 属性 class style onClick
  * @param children 子节点 文本、数组、空
  * @returns
  */
 export function createVNode(type: any, props: any, children?: any) {
-  // 位运算标记
+  // 位运算标记  一个数字可以同时表示多个信息 （元素/组件 + children类型）
   const shapeFlag = isString(type)
     ? ShapeFlags.ELEMENT
     : isObject(type)
-      ? ShapeFlags.STATEFUL_COMPONENT
+      ? ShapeFlags.STATEFUL_COMPONENT // 有状态组件
       : 0
   const vnode = {
-    __v_isVnode: true,
-    type,
-    props,
-    children,
-    key: props?.key, // diff算法后面需要的key
-    el: null, // 虚拟节点需要的真实节点是谁
-    shapeFlag
+    __v_isVnode: true, // 虚拟节点标识
+    type, // 节点类型（元素名/组件对象/Text/Fragment）（元素名/组件对象/Text/Fragment）
+    props, // 属性  class/style/onClick/自定义 props）
+    children, // 孩子 文本/数组/空
+    key: props?.key, // diff 用来判断是否同一个节点，以及做列表 diff
+    el: null, // 将来挂载后对应的真实 DOM 节点（mount 时会赋值）
+    shapeFlag // 上面算出来的类型标记
   }
 
-  // 根据 children 补充 shapeFlag 标记
+  // 根据 children 再补充 shapeFlag 标记
   if (children) {
     if (Array.isArray(children)) {
-      vnode.shapeFlag |= ShapeFlags.ARRAY_CHILDREN
+      vnode.shapeFlag |= ShapeFlags.ARRAY_CHILDREN // 补充孩子是数组
     } else {
-      children = String(children)
-      vnode.shapeFlag |= ShapeFlags.TEXT_CHILDREN
+      vnode.children = String(children)
+      vnode.shapeFlag |= ShapeFlags.TEXT_CHILDREN // 补充孩子是文本
     }
   }
 

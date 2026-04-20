@@ -380,6 +380,23 @@ export function createRenderer(renderOptions: any) {
     }
   }
 
+  /**
+   * 更新组件的属性和插槽
+   * @param instance 组件实例
+   * @param next 新的虚拟节点
+   */
+  const updateComponentPreRender = (instance: any, next: any) => {
+    instance.next = null
+    instance.vnode = next // instance.props
+    updateProps(instance, instance.props, next.props)
+  }
+
+  /**
+   * 设置渲染effect
+   * @param instance 组件实例
+   * @param container 容器元素
+   * @param anchor 锚点元素
+   */
   function setupRenderEffect(instance: any, container: any, anchor: any) {
     const { render } = instance
 
@@ -392,6 +409,11 @@ export function createRenderer(renderOptions: any) {
         patch(null, subTree, container, anchor)
       } else {
         // 基于状态的组件更新
+        const { next } = instance
+        if (next) {
+          // 更新属性和插槽
+          updateComponentPreRender(instance, next)
+        }
         const subTree = render.call(instance.proxy, instance.proxy)
         patch(instance.subTree, subTree, container, anchor)
         instance.subTree = subTree
@@ -399,10 +421,10 @@ export function createRenderer(renderOptions: any) {
     }
 
     let effect = new ReactiveEffect(componentUpdateFn, () => {
+      // 多次state改动合并成一次渲染
       queueJob(update)
     })
 
-    // @ts-ignore
     const update = (instance.update = () => {
       effect.run()
     })
@@ -417,13 +439,91 @@ export function createRenderer(renderOptions: any) {
    */
   const mountComponent = (vnode2: any, container: any, anchor: any) => {
     // 1. 先创建组件实例
-    const instance = (vnode2.component = createComponentInstance(vnode2))
+    const instance = (vnode2.component = createComponentInstance(vnode2)) // 之后更新能通过新vnode找到旧实例
 
     // 2. 给实例属性赋值
     setupComponent(instance)
 
-    // 3. 创建一个effect
+    // 3. 把组件渲染变成一个响应式effect
     setupRenderEffect(instance, container, anchor)
+  }
+
+  /**
+   * 判断属性是否有变化
+   * @param prevProps 旧的属性
+   * @param nextProps 新的属性
+   * @returns 是否有变化
+   */
+  const hasPropsChance = (prevProps: any, nextProps: any) => {
+    let nKeys = Object.keys(nextProps)
+
+    if (Object.keys(prevProps).length !== Object.keys(nextProps).length) {
+      // 属性数量不一致
+      return true
+    }
+
+    for (let i = 0; i < nKeys.length; i++) {
+      const key = nKeys[i]
+      if (prevProps[key!] !== nextProps[key!]) {
+        // 属性值不一致
+        return true
+      }
+    }
+
+    return false
+  }
+
+  /**
+   * 更新属性
+   * @param instance 组件实例
+   * @param prevProps 旧的属性
+   * @param nextProps 新的属性
+   */
+  const updateProps = (instance: any, prevProps: any, nextProps: any) => {
+    if (hasPropsChance(prevProps, nextProps)) {
+      for (let key in nextProps) {
+        instance.props[key!] = nextProps[key!] // 用新的覆盖所有老的
+      }
+      for (let key in instance.props) {
+        if (!(key in nextProps)) {
+          delete instance.props[key!] // 删除老的 多余的
+        }
+      }
+    }
+  }
+
+  /**
+   * 判断是否需要更新组件
+   * @param vnode1 旧的虚拟节点
+   * @param vnode2 新的虚拟节点
+   * @returns 是否需要更新组件
+   */
+  const shouldComponentUpdate = (vnode1: any, vnode2: any) => {
+    const { props: prevProp, children: prevChildren } = vnode1
+    const { props: nextProps, children: nextChildren } = vnode2
+
+    if (prevChildren || nextChildren) return true
+
+    if (prevProp === nextProps) return false
+
+    // 如果属性不一致则更新
+    return hasPropsChance(prevProp, nextProps)
+    // updateProps(instance, prevProp, nextProps)
+  }
+
+  /**
+   * 更新组件
+   * @param vnode1 旧的虚拟节点
+   * @param vnode2 新的虚拟节点
+   */
+  const updateComponent = (vnode1: any, vnode2: any) => {
+    const instance = (vnode2.component = vnode1.component) // 复用组件的实例
+
+    if (shouldComponentUpdate(vnode1, vnode2)) {
+      instance.next = vnode2 // 如果调用update  有 next属性 说明是 属性更新 插槽属性
+      // update就是 effect.run 会触发componentUpdateFn 接着更新组件
+      instance.update() // 让更新逻辑统一
+    }
   }
 
   /**
@@ -439,11 +539,13 @@ export function createRenderer(renderOptions: any) {
     container: any,
     anchor: any
   ) => {
+    // 首次渲染
     if (vnode1 === null) {
-      // 组件的挂载
+      // 组件挂载
       mountComponent(vnode2, container, anchor)
     } else {
-      // 组建的关系
+      // 组件的更新
+      updateComponent(vnode1, vnode2)
     }
   }
 
