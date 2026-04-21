@@ -1,4 +1,26 @@
 import { isObject, isString, ShapeFlags } from '@myvue/shared'
+import { isTeleport } from './teleport.js'
+
+function normalizeVNode(child: any) {
+  if (
+    child === null ||
+    child === undefined ||
+    child === true ||
+    child === false
+  ) {
+    return createVNode(Text, null, '')
+  }
+
+  if (Array.isArray(child)) {
+    return createVNode(Fragment, null, child)
+  }
+
+  if (typeof child === 'string' || typeof child === 'number') {
+    return createVNode(Text, null, String(child))
+  }
+
+  return child
+}
 
 /**
  * 创建虚拟节点
@@ -11,9 +33,16 @@ export function createVNode(type: any, props: any, children?: any) {
   // 位运算标记  一个数字可以同时表示多个信息 （元素/组件 + children类型）
   const shapeFlag = isString(type)
     ? ShapeFlags.ELEMENT
-    : isObject(type)
-      ? ShapeFlags.STATEFUL_COMPONENT // 有状态组件
-      : 0
+    : isTeleport(type)
+      ? ShapeFlags.TELEPORT //
+      : isObject(type)
+        ? ShapeFlags.STATEFUL_COMPONENT // 有状态组件
+        : 0
+
+  if (Array.isArray(children)) {
+    children = children.map(normalizeVNode)
+  }
+
   const vnode = {
     __v_isVnode: true, // 虚拟节点标识
     type, // 节点类型（元素名/组件对象/Text/Fragment）（元素名/组件对象/Text/Fragment）

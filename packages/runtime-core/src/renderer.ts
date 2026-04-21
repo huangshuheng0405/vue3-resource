@@ -1,5 +1,5 @@
 import { ShapeFlags } from '@myvue/shared'
-import { Fragment, isSameVnode, Text } from './createVnode.js'
+import { createVNode, Fragment, isSameVnode, Text } from './createVnode.js'
 import { getSequence } from './LIS.js'
 import { ReactiveEffect } from '@myvue/reactivity'
 import { queueJob } from './scheduler.js'
@@ -25,14 +25,34 @@ export function createRenderer(renderOptions: any) {
     patchProp: hostPatchProp
   } = renderOptions
 
+  const normalize = (children: any = []) => {
+    if (Array.isArray(children)) {
+      for (let i = 0; i < children.length; i++) {
+        if (
+          typeof children[i] === 'string' ||
+          typeof children[i] === 'number'
+        ) {
+          children[i] = createVNode(Text, null, String(children[i]))
+        }
+      }
+    }
+
+    return children
+  }
   /**
    * 挂载子节点数组
    * @param children 子节点数组
    * @param container 容器元素
    */
-  const mountChildren = (children: any, container: any) => {
+  const mountChildren = (
+    children: any,
+    container: any,
+    anchor: any = null,
+    parentComponent: any
+  ) => {
+    normalize(children)
     for (let i = 0; i < children.length; i++) {
-      patch(null, children[i], container)
+      patch(null, children[i], container, anchor, parentComponent)
     }
   }
 
@@ -41,8 +61,14 @@ export function createRenderer(renderOptions: any) {
    * @param vnode 虚拟节点
    * @param container 容器元素
    * @param anchor 用于插入到某个兄弟节点前面
+   * @param parentComponent 父组件实例
    */
-  const mountElement = (vnode: any, container: any, anchor: any = null) => {
+  const mountElement = (
+    vnode: any,
+    container: any,
+    anchor: any = null,
+    parentComponent: any
+  ) => {
     const { type, children, props, shapeFlag } = vnode
 
     // 创建真实元素
@@ -64,7 +90,7 @@ export function createRenderer(renderOptions: any) {
       hostSetElementText(el, children)
     } else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
       // 数组
-      mountChildren(children, el)
+      mountChildren(children, el, anchor, parentComponent)
     }
 
     // 最后插入到容器
@@ -81,15 +107,16 @@ export function createRenderer(renderOptions: any) {
     vnode1: any,
     vnode2: any,
     container: any,
-    anchor: any = null
+    anchor: any = null,
+    parentComponent: any
   ) => {
     // vnode1 为 null 说明是挂载
     if (vnode1 === null) {
       // 初始化操作
-      mountElement(vnode2, container, anchor)
+      mountElement(vnode2, container, anchor, parentComponent)
     } else {
       // 更新元素节点
-      patchElement(vnode1, vnode2, container)
+      patchElement(vnode1, vnode2, container, anchor, parentComponent)
     }
   }
 
@@ -279,7 +306,13 @@ export function createRenderer(renderOptions: any) {
    * @param n2 新的虚拟节点
    * @param el 容器元素
    */
-  const patchChildren = (n1: any, n2: any, el: any) => {
+  const patchChildren = (
+    n1: any,
+    n2: any,
+    el: any,
+    anchor: any,
+    parentComponent: any
+  ) => {
     const c1 = n1.children
     const c2 = n2.children
 
@@ -319,7 +352,7 @@ export function createRenderer(renderOptions: any) {
 
         // 情况6
         if (curShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-          mountChildren(c2, el)
+          mountChildren(c2, el, anchor, parentComponent)
         }
       }
     }
@@ -330,8 +363,16 @@ export function createRenderer(renderOptions: any) {
    * @param n1 旧的虚拟节点
    * @param n2 新的虚拟节点
    * @param container 容器元素
+   * @param anchor 用于插入到某个兄弟节点前面
+   * @param parentComponent 父组件实例
    */
-  const patchElement = (n1: any, n2: any, container: any) => {
+  const patchElement = (
+    n1: any,
+    n2: any,
+    container: any,
+    anchor: any,
+    parentComponent: any
+  ) => {
     // 比较元素差异 肯定要复用元素
     // 比较属性和元素的子节点
     let el = (n2.el = n1.el) // 对dom元素的复用
@@ -343,7 +384,7 @@ export function createRenderer(renderOptions: any) {
     patchProps(oldProps, newProps, el)
 
     // 处理子节点
-    patchChildren(n1, n2, el)
+    patchChildren(n1, n2, el, anchor, parentComponent)
   }
 
   /**
@@ -370,13 +411,19 @@ export function createRenderer(renderOptions: any) {
    * @param vnode2 新的虚拟节点
    * @param container 容器元素
    */
-  const processFragment = (vnode1: any, vnode2: any, container: any) => {
+  const processFragment = (
+    vnode1: any,
+    vnode2: any,
+    container: any,
+    anchor: any,
+    parentComponent: any
+  ) => {
     if (vnode1 == null) {
       // fragment节点的挂载
-      mountChildren(vnode2.children, container)
+      mountChildren(vnode2.children, container, anchor, parentComponent)
     } else {
       // fragment节点的更新
-      patchChildren(vnode1, vnode2, container)
+      patchChildren(vnode1, vnode2, container, anchor, parentComponent)
     }
   }
 
@@ -561,9 +608,10 @@ export function createRenderer(renderOptions: any) {
     vnode1: any,
     vnode2: any,
     container: any,
-    anchor: any = null
+    anchor: any = null,
+    parentComponent: any = null
   ) => {
-    if (vnode1 == vnode2) {
+    if (vnode1 === vnode2) {
       // 再次渲染同一个元素直接跳过即可
       return
     }
@@ -581,11 +629,26 @@ export function createRenderer(renderOptions: any) {
         processText(vnode1, vnode2, container)
         break
       case Fragment:
-        processFragment(vnode1, vnode2, container)
+        processFragment(vnode1, vnode2, container, anchor, parentComponent)
         break
       default:
         if (shapeFlag & ShapeFlags.ELEMENT) {
-          processElement(vnode1, vnode2, container, anchor)
+          processElement(vnode1, vnode2, container, anchor, parentComponent)
+        } else if (shapeFlag & ShapeFlags.TELEPORT) {
+          // 处理 teleport 组件
+          type.process(vnode1, vnode2, container, anchor, parentComponent, {
+            mountChildren,
+            patchChildren,
+            move(vnode: any, container: any, anchor: any) {
+              // 此方法可以将组件或dom元素移动到指定的位置
+              // debugger
+              hostInsert(
+                vnode.component ? vnode.component.subTree.el : vnode.el,
+                container,
+                anchor
+              )
+            }
+          })
         } else if (shapeFlag & ShapeFlags.COMPONENT) {
           // 对组件的处理 vue3中函数式组件以及废弃了
           processComponent(vnode1, vnode2, container, anchor)
@@ -604,6 +667,8 @@ export function createRenderer(renderOptions: any) {
       unmountChildren(vnode.children)
     } else if (shapeFlag & ShapeFlags.COMPONENT) {
       unmount(vnode.component.subTree)
+    } else if (shapeFlag & ShapeFlags.TELEPORT) {
+      vnode.type.remove(vnode, unmountChildren)
     } else {
       hostRemove(vnode.el)
     }

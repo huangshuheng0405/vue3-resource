@@ -142,9 +142,53 @@ function isVNode(value) {
 var hasOwnProperty = Object.prototype.hasOwnProperty;
 var hasOwn = (value, key) => hasOwnProperty.call(value, key);
 
+// packages/runtime-core/src/teleport.ts
+var Teleport = {
+  __isTeleport: true,
+  remove(vnode, unmountChildren) {
+    const { shapeFlag, children } = vnode;
+    if (shapeFlag & 16 /* ARRAY_CHILDREN */) {
+      unmountChildren(children);
+    }
+  },
+  process(vnode1, vnode2, container, anchor, parentComponent, internals) {
+    let { mountChildren, patchChildren, move } = internals;
+    if (!vnode1) {
+      const target = vnode2.target = document.querySelector(vnode2.props.to);
+      if (target) {
+        mountChildren(vnode2.children, target, anchor, parentComponent);
+      }
+    } else {
+      patchChildren(vnode1, vnode2, vnode2.target, anchor, parentComponent);
+      if (vnode2.props.to !== vnode1.props.to) {
+        const nextTarget = document.querySelector(vnode2.props.to);
+        vnode2.children.forEach((child) => {
+          move(child, nextTarget, anchor);
+        });
+      }
+    }
+  }
+};
+var isTeleport = (value) => value.__isTeleport;
+
 // packages/runtime-core/src/createVnode.ts
+function normalizeVNode(child) {
+  if (child === null || child === void 0 || child === true || child === false) {
+    return createVNode(Text, null, "");
+  }
+  if (Array.isArray(child)) {
+    return createVNode(Fragment, null, child);
+  }
+  if (typeof child === "string" || typeof child === "number") {
+    return createVNode(Text, null, String(child));
+  }
+  return child;
+}
 function createVNode(type, props, children) {
-  const shapeFlag = isString(type) ? 1 /* ELEMENT */ : isObject(type) ? 4 /* STATEFUL_COMPONENT */ : 0;
+  const shapeFlag = isString(type) ? 1 /* ELEMENT */ : isTeleport(type) ? 64 /* TELEPORT */ : isObject(type) ? 4 /* STATEFUL_COMPONENT */ : 0;
+  if (Array.isArray(children)) {
+    children = children.map(normalizeVNode);
+  }
   const vnode = {
     __v_isVnode: true,
     // 虚拟节点标识
@@ -804,12 +848,23 @@ function createRenderer(renderOptions2) {
     nextSibling: hostNextSibling,
     patchProp: hostPatchProp
   } = renderOptions2;
-  const mountChildren = (children, container) => {
+  const normalize = (children = []) => {
+    if (Array.isArray(children)) {
+      for (let i = 0; i < children.length; i++) {
+        if (typeof children[i] === "string" || typeof children[i] === "number") {
+          children[i] = createVNode(Text, null, String(children[i]));
+        }
+      }
+    }
+    return children;
+  };
+  const mountChildren = (children, container, anchor = null, parentComponent) => {
+    normalize(children);
     for (let i = 0; i < children.length; i++) {
-      patch(null, children[i], container);
+      patch(null, children[i], container, anchor, parentComponent);
     }
   };
-  const mountElement = (vnode, container, anchor = null) => {
+  const mountElement = (vnode, container, anchor = null, parentComponent) => {
     const { type, children, props, shapeFlag } = vnode;
     let el = vnode.el = hostCreateElement(type);
     if (props) {
@@ -820,15 +875,15 @@ function createRenderer(renderOptions2) {
     if (shapeFlag & 8 /* TEXT_CHILDREN */) {
       hostSetElementText(el, children);
     } else if (shapeFlag & 16 /* ARRAY_CHILDREN */) {
-      mountChildren(children, el);
+      mountChildren(children, el, anchor, parentComponent);
     }
     hostInsert(el, container, anchor);
   };
-  const processElement = (vnode1, vnode2, container, anchor = null) => {
+  const processElement = (vnode1, vnode2, container, anchor = null, parentComponent) => {
     if (vnode1 === null) {
-      mountElement(vnode2, container, anchor);
+      mountElement(vnode2, container, anchor, parentComponent);
     } else {
-      patchElement(vnode1, vnode2, container);
+      patchElement(vnode1, vnode2, container, anchor, parentComponent);
     }
   };
   const patchProps = (oldProps, newProps, el) => {
@@ -926,7 +981,7 @@ function createRenderer(renderOptions2) {
       }
     }
   };
-  const patchChildren = (n1, n2, el) => {
+  const patchChildren = (n1, n2, el, anchor, parentComponent) => {
     const c1 = n1.children;
     const c2 = n2.children;
     const prevShapeFlag = n1.shapeFlag;
@@ -950,17 +1005,17 @@ function createRenderer(renderOptions2) {
           hostSetElementText(el, "");
         }
         if (curShapeFlag & 16 /* ARRAY_CHILDREN */) {
-          mountChildren(c2, el);
+          mountChildren(c2, el, anchor, parentComponent);
         }
       }
     }
   };
-  const patchElement = (n1, n2, container) => {
+  const patchElement = (n1, n2, container, anchor, parentComponent) => {
     let el = n2.el = n1.el;
     let oldProps = n1.props || {};
     let newProps = n2.props || {};
     patchProps(oldProps, newProps, el);
-    patchChildren(n1, n2, el);
+    patchChildren(n1, n2, el, anchor, parentComponent);
   };
   const processText = (vnode1, vnode2, container) => {
     if (vnode1 == null) {
@@ -972,11 +1027,11 @@ function createRenderer(renderOptions2) {
       }
     }
   };
-  const processFragment = (vnode1, vnode2, container) => {
+  const processFragment = (vnode1, vnode2, container, anchor, parentComponent) => {
     if (vnode1 == null) {
-      mountChildren(vnode2.children, container);
+      mountChildren(vnode2.children, container, anchor, parentComponent);
     } else {
-      patchChildren(vnode1, vnode2, container);
+      patchChildren(vnode1, vnode2, container, anchor, parentComponent);
     }
   };
   const updateComponentPreRender = (instance, next) => {
@@ -1061,8 +1116,8 @@ function createRenderer(renderOptions2) {
       updateComponent(vnode1, vnode2);
     }
   };
-  const patch = (vnode1, vnode2, container, anchor = null) => {
-    if (vnode1 == vnode2) {
+  const patch = (vnode1, vnode2, container, anchor = null, parentComponent = null) => {
+    if (vnode1 === vnode2) {
       return;
     }
     if (vnode1 && !isSameVnode(vnode1, vnode2)) {
@@ -1075,11 +1130,23 @@ function createRenderer(renderOptions2) {
         processText(vnode1, vnode2, container);
         break;
       case Fragment:
-        processFragment(vnode1, vnode2, container);
+        processFragment(vnode1, vnode2, container, anchor, parentComponent);
         break;
       default:
         if (shapeFlag & 1 /* ELEMENT */) {
-          processElement(vnode1, vnode2, container, anchor);
+          processElement(vnode1, vnode2, container, anchor, parentComponent);
+        } else if (shapeFlag & 64 /* TELEPORT */) {
+          type.process(vnode1, vnode2, container, anchor, parentComponent, {
+            mountChildren,
+            patchChildren,
+            move(vnode, container2, anchor2) {
+              hostInsert(
+                vnode.component ? vnode.component.subTree.el : vnode.el,
+                container2,
+                anchor2
+              );
+            }
+          });
         } else if (shapeFlag & 6 /* COMPONENT */) {
           processComponent(vnode1, vnode2, container, anchor);
         }
@@ -1092,6 +1159,8 @@ function createRenderer(renderOptions2) {
       unmountChildren(vnode.children);
     } else if (shapeFlag & 6 /* COMPONENT */) {
       unmount(vnode.component.subTree);
+    } else if (shapeFlag & 64 /* TELEPORT */) {
+      vnode.type.remove(vnode, unmountChildren);
     } else {
       hostRemove(vnode.el);
     }
@@ -1121,6 +1190,7 @@ export {
   Fragment,
   ReactiveEffect,
   ReactiveFlags,
+  Teleport,
   Text,
   activeEffect,
   computed,
@@ -1131,6 +1201,7 @@ export {
   isReactive,
   isRef,
   isSameVnode,
+  isTeleport,
   proxyRefs,
   reactive,
   ref,

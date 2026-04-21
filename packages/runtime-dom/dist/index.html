@@ -6,40 +6,32 @@
     <title>Document</title>
   </head>
   <body>
-    <div class="app"></div>
+    <div id="app"></div>
+    <div id="root"></div>
+    <div id="root2"></div>
     <script type="module">
-      // import {
-      //   createRenderer,
-      //   render,
-      //   h,
-      //   Text,
-      //   ref,
-      //   Fragment
-      // } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js'
-      import { render, h, Text, Fragment, ref } from './runtime-dom.js'
-      const app = document.querySelector('.app')
+      //   import {
+      //     createRenderer,
+      //     render,
+      //     h,
+      //     Text,
+      //     ref,
+      //     Fragment,
+      //     Teleport
+      //   } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js'
+      import {
+        render,
+        h,
+        Text,
+        Fragment,
+        ref,
+        Teleport
+      } from './runtime-dom.js'
 
-      // setup 每个组件只会执行一次 可以放入我们的composition  api
-      // 解决反复横跳问题
-
-      const VueComponent = {
-        setup(props, { emit, slots, attrs, expose }) {
-          return (proxy) => {
-            return h(
-              'button',
-              { onClick: () => emit('myEvent', 100) },
-              'click me'
-            )
-          }
-        }
-      }
-
-      // 组件由两个虚拟节点组成
-      // render函数返回的虚拟节点
-      render(h(VueComponent, { onMyEvent: (value) => alert(value) }), app)
+      render(h(Teleport, { to: '#root' }, ['123', 'abc']), app)
 
       setTimeout(() => {
-        render(h(null, { onMyEvent: (value) => alert(value) }), app)
+        render(null, app)
       }, 1000)
     </script>
   </body>
