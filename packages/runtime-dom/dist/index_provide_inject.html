@@ -32,11 +32,34 @@
         inject
       } from './runtime-dom.js'
 
-      function funcionComponent(props) {
-        return h('div', props.a + props.b)
+      const P1 = {
+        setup(props) {
+          const name = ref('zf')
+          setTimeout(() => {
+            name.value = 'zf2'
+          }, 1000)
+          provide('name', name)
+          return () => {
+            return h(P2)
+          }
+        }
+      }
+      const P2 = {
+        render() {
+          return h(P3)
+        }
+      }
+      const P3 = {
+        setup(props) {
+          const name = inject('name')
+          const age = inject('age', 30)
+          return () => {
+            return h('div', [name.value, age])
+          }
+        }
       }
 
-      render(h(funcionComponent, { a: 1, b: 2 }), app)
+      render(h(P1), app)
     </script>
   </body>
 </html>

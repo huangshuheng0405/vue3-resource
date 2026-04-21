@@ -173,9 +173,7 @@ var isTeleport = (value) => value.__isTeleport;
 
 // packages/runtime-core/src/createVnode.ts
 function createVNode(type, props, children) {
-  const shapeFlag = isString(type) ? 1 /* ELEMENT */ : isTeleport(type) ? 64 /* TELEPORT */ : isObject(type) ? 4 /* STATEFUL_COMPONENT */ : 0;
-  if (Array.isArray(children)) {
-  }
+  const shapeFlag = isString(type) ? 1 /* ELEMENT */ : isTeleport(type) ? 64 /* TELEPORT */ : isObject(type) ? 4 /* STATEFUL_COMPONENT */ : isFunction(type) ? 2 /* FUNCTIONAL_COMPONENT */ : 0;
   const vnode = {
     __v_isVnode: true,
     // 虚拟节点标识
@@ -1037,11 +1035,19 @@ function createRenderer(renderOptions2) {
     instance.vnode = next;
     updateProps(instance, instance.props, next.props);
   };
+  function renderComponent(instance) {
+    const { render: render3, vnode, proxy, props, attrs } = instance;
+    if (vnode.shapeFlag & 4 /* STATEFUL_COMPONENT */) {
+      return render3.call(proxy, proxy);
+    } else {
+      return vnode.type(attrs);
+    }
+  }
   function setupRenderEffect(instance, container, anchor, parentComponent) {
     const { render: render3 } = instance;
     const componentUpdateFn = () => {
       if (!instance.isMounted) {
-        const subTree = render3.call(instance.proxy, instance.proxy);
+        const subTree = renderComponent(instance);
         instance.subTree = subTree;
         instance.isMounted = true;
         patch(null, subTree, container, anchor, instance);
@@ -1050,7 +1056,7 @@ function createRenderer(renderOptions2) {
         if (next) {
           updateComponentPreRender(instance, next);
         }
-        const subTree = render3.call(instance.proxy, instance.proxy);
+        const subTree = renderComponent(instance);
         patch(instance.subTree, subTree, container, anchor, instance);
         instance.subTree = subTree;
       }

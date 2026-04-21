@@ -443,6 +443,17 @@ export function createRenderer(renderOptions: any) {
     updateProps(instance, instance.props, next.props)
   }
 
+  function renderComponent(instance: any) {
+    const { render, vnode, proxy, props, attrs } = instance
+
+    if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
+      return render.call(proxy, proxy)
+    } else {
+      // 此写法 不用使用 vue3没有性能优化
+      return vnode.type(attrs) // 函数式组件
+    }
+  }
+
   /**
    * 设置渲染effect
    * @param instance 组件实例
@@ -460,7 +471,7 @@ export function createRenderer(renderOptions: any) {
     const componentUpdateFn = () => {
       // 我们要在这里面区分 是第一次 还是 后续更新
       if (!instance.isMounted) {
-        const subTree = render.call(instance.proxy, instance.proxy)
+        const subTree = renderComponent(instance)
         instance.subTree = subTree
         instance.isMounted = true
         patch(null, subTree, container, anchor, instance)
@@ -471,7 +482,7 @@ export function createRenderer(renderOptions: any) {
           // 更新属性和插槽
           updateComponentPreRender(instance, next)
         }
-        const subTree = render.call(instance.proxy, instance.proxy)
+        const subTree = renderComponent(instance)
         patch(instance.subTree, subTree, container, anchor, instance)
         instance.subTree = subTree
       }

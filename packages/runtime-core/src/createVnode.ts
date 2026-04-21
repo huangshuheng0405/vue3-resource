@@ -1,26 +1,5 @@
-import { isObject, isString, ShapeFlags } from '@myvue/shared'
+import { isFunction, isObject, isString, ShapeFlags } from '@myvue/shared'
 import { isTeleport } from './teleport.js'
-
-function normalizeVNode(child: any) {
-  if (
-    child === null ||
-    child === undefined ||
-    child === true ||
-    child === false
-  ) {
-    return createVNode(Text, null, '')
-  }
-
-  if (Array.isArray(child)) {
-    return createVNode(Fragment, null, child)
-  }
-
-  if (typeof child === 'string' || typeof child === 'number') {
-    return createVNode(Text, null, String(child))
-  }
-
-  return child
-}
 
 /**
  * 创建虚拟节点
@@ -36,13 +15,10 @@ export function createVNode(type: any, props: any, children?: any) {
     : isTeleport(type)
       ? ShapeFlags.TELEPORT //
       : isObject(type)
-        ? ShapeFlags.STATEFUL_COMPONENT // 有状态组件
-        : 0
-
-  if (Array.isArray(children)) {
-    // 一个bug 的解决方法 在 renderer的normalize解决了
-    // children = children.map(normalizeVNode)
-  }
+        ? ShapeFlags.STATEFUL_COMPONENT
+        : isFunction(type)
+          ? ShapeFlags.FUNCTIONAL_COMPONENT // 有状态组件
+          : 0
 
   const vnode = {
     __v_isVnode: true, // 虚拟节点标识
