@@ -40,7 +40,8 @@ export function createVNode(type: any, props: any, children?: any) {
         : 0
 
   if (Array.isArray(children)) {
-    children = children.map(normalizeVNode)
+    // 一个bug 的解决方法 在 renderer的normalize解决了
+    // children = children.map(normalizeVNode)
   }
 
   const vnode = {

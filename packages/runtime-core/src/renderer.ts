@@ -25,6 +25,11 @@ export function createRenderer(renderOptions: any) {
     patchProp: hostPatchProp
   } = renderOptions
 
+  /**
+   * 处理子节点数组
+   * @param children 子节点数组
+   * @returns 处理后的子节点数组
+   */
   const normalize = (children: any = []) => {
     if (Array.isArray(children)) {
       for (let i = 0; i < children.length; i++) {
@@ -314,7 +319,7 @@ export function createRenderer(renderOptions: any) {
     parentComponent: any
   ) => {
     const c1 = n1.children
-    const c2 = n2.children
+    const c2 = normalize(n2.children)
 
     const prevShapeFlag = n1.shapeFlag
     const curShapeFlag = n2.shapeFlag
@@ -444,7 +449,12 @@ export function createRenderer(renderOptions: any) {
    * @param container 容器元素
    * @param anchor 锚点元素
    */
-  function setupRenderEffect(instance: any, container: any, anchor: any) {
+  function setupRenderEffect(
+    instance: any,
+    container: any,
+    anchor: any,
+    parentComponent: any
+  ) {
     const { render } = instance
 
     const componentUpdateFn = () => {
@@ -453,7 +463,7 @@ export function createRenderer(renderOptions: any) {
         const subTree = render.call(instance.proxy, instance.proxy)
         instance.subTree = subTree
         instance.isMounted = true
-        patch(null, subTree, container, anchor)
+        patch(null, subTree, container, anchor, instance)
       } else {
         // 基于状态的组件更新
         const { next } = instance
@@ -462,7 +472,7 @@ export function createRenderer(renderOptions: any) {
           updateComponentPreRender(instance, next)
         }
         const subTree = render.call(instance.proxy, instance.proxy)
-        patch(instance.subTree, subTree, container, anchor)
+        patch(instance.subTree, subTree, container, anchor, instance)
         instance.subTree = subTree
       }
     }
@@ -484,15 +494,23 @@ export function createRenderer(renderOptions: any) {
    * @param container 容器元素
    * @param anchor 锚点元素
    */
-  const mountComponent = (vnode2: any, container: any, anchor: any) => {
+  const mountComponent = (
+    vnode2: any,
+    container: any,
+    anchor: any,
+    parentComponent: any
+  ) => {
     // 1. 先创建组件实例
-    const instance = (vnode2.component = createComponentInstance(vnode2)) // 之后更新能通过新vnode找到旧实例
+    const instance = (vnode2.component = createComponentInstance(
+      vnode2,
+      parentComponent
+    )) // 之后更新能通过新vnode找到旧实例
 
     // 2. 给实例属性赋值
     setupComponent(instance)
 
     // 3. 把组件渲染变成一个响应式effect
-    setupRenderEffect(instance, container, anchor)
+    setupRenderEffect(instance, container, anchor, parentComponent)
   }
 
   /**
@@ -584,12 +602,13 @@ export function createRenderer(renderOptions: any) {
     vnode1: any,
     vnode2: any,
     container: any,
-    anchor: any
+    anchor: any,
+    parentComponent: any
   ) => {
     // 首次渲染
     if (vnode1 === null) {
       // 组件挂载
-      mountComponent(vnode2, container, anchor)
+      mountComponent(vnode2, container, anchor, parentComponent)
     } else {
       // 组件的更新
       updateComponent(vnode1, vnode2)
@@ -651,7 +670,7 @@ export function createRenderer(renderOptions: any) {
           })
         } else if (shapeFlag & ShapeFlags.COMPONENT) {
           // 对组件的处理 vue3中函数式组件以及废弃了
-          processComponent(vnode1, vnode2, container, anchor)
+          processComponent(vnode1, vnode2, container, anchor, parentComponent)
         }
         break
     }

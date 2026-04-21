@@ -17,7 +17,9 @@
       //     Text,
       //     ref,
       //     Fragment,
-      //     Teleport
+      //     Teleport,
+      //     provide,
+      //     inject
       //   } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js'
       import {
         render,
@@ -25,14 +27,39 @@
         Text,
         Fragment,
         ref,
-        Teleport
+        Teleport,
+        provide,
+        inject
       } from './runtime-dom.js'
 
-      render(h(Teleport, { to: '#root' }, ['123', 'abc']), app)
+      const P1 = {
+        setup(props) {
+          const name = ref('zf')
+          setTimeout(() => {
+            name.value = 'zf2'
+          }, 1000)
+          provide('name', name)
+          return () => {
+            return h(P2)
+          }
+        }
+      }
+      const P2 = {
+        render() {
+          return h(P3)
+        }
+      }
+      const P3 = {
+        setup(props) {
+          const name = inject('name')
+          const age = inject('age', 30)
+          return () => {
+            return h('div', [name.value, age])
+          }
+        }
+      }
 
-      setTimeout(() => {
-        render(null, app)
-      }, 1000)
+      render(h(P1), app)
     </script>
   </body>
 </html>

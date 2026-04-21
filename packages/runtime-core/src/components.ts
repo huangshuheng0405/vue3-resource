@@ -6,7 +6,7 @@ import { hasOwn, isFunction, ShapeFlags } from '@myvue/shared'
  * @param vnode 组件的虚拟节点
  * @returns 组件实例
  */
-export function createComponentInstance(vnode: any) {
+export function createComponentInstance(vnode: any, parent: any) {
   const instance = {
     data: null, // 状态
     vnode: vnode, // 组件的虚拟节点
@@ -20,7 +20,9 @@ export function createComponentInstance(vnode: any) {
     component: null,
     proxy: null, // 用来代理 props  attrs data 让用户更方便使用
     setupState: null,
-    exposed: null
+    exposed: null,
+    parent,
+    provides: parent ? parent.provides : Object.create(null)
   }
 
   return instance
@@ -81,15 +83,15 @@ export function setupComponent(instance: any) {
         instance.exposed = value
       },
       emit(event: any, ...payload: any) {
-        // debugger
         const eventName = `on${event[0].toUpperCase() + event.slice(1)}`
 
         const handler = instance.vnode.props[eventName]
         handler && handler(...payload)
       }
     }
+    setCurrentInstance(instance)
     const setupResult = setup(instance.props, setupContext)
-
+    unSetCurrentInstance()
     if (isFunction(setupResult)) {
       instance.render = setupResult
     } else {
@@ -153,4 +155,13 @@ const handler = {
 
     return true
   }
+}
+
+export let currentInstance: any = null
+export const getCurrentInstance = () => currentInstance
+export const setCurrentInstance = (instance: any) => {
+  currentInstance = instance
+}
+export const unSetCurrentInstance = () => {
+  currentInstance = null
 }
