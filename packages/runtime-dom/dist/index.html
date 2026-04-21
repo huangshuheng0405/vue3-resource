@@ -10,17 +10,21 @@
     <div id="root"></div>
     <div id="root2"></div>
     <script type="module">
-      //   import {
-      //     createRenderer,
-      //     render,
-      //     h,
-      //     Text,
-      //     ref,
-      //     Fragment,
-      //     Teleport,
-      //     provide,
-      //     inject
-      //   } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js'
+      // import {
+      //   createRenderer,
+      //   render,
+      //   h,
+      //   Text,
+      //   ref,
+      //   Fragment,
+      //   Teleport,
+      //   provide,
+      //   inject,
+      //   onMounted,
+      //   onBeforeMount,
+      //   onBeforeUpdate,
+      //   onUpdated
+      // } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js'
       import {
         render,
         h,
@@ -29,14 +33,72 @@
         ref,
         Teleport,
         provide,
-        inject
+        inject,
+        onBeforeMount,
+        onBeforeUpdate,
+        onMounted,
+        onUpdated,
+        getCurrentInstance
       } from './runtime-dom.js'
 
-      function funcionComponent(props) {
-        return h('div', props.a + props.b)
+      // 父初始化  子初始化  父完成
+
+      const myComponent = {
+        props: {
+          value: String
+        },
+        setup(props, { emit }) {
+          console.log(getCurrentInstance(), 'child') // null
+
+          onBeforeMount(() => {
+            console.log(getCurrentInstance(), 'child bug ') // null
+            console.log('child beforeMount')
+          })
+          onMounted(() => {
+            console.log('child mounted')
+          })
+          onBeforeUpdate(() => {
+            console.log('child onBeforeUpdated')
+          })
+          onUpdated(() => {
+            console.log('child onUpdated')
+          })
+
+          return () => {
+            return h('div', props.value)
+          }
+        }
       }
 
-      render(h(funcionComponent, { a: 1, b: 2 }), app)
+      const VueComponent = {
+        setup(props, { emit }) {
+          console.log(getCurrentInstance(), 'parent') // null
+
+          onBeforeMount(() => {
+            console.log('parent beforeMount')
+          })
+          onMounted(() => {
+            console.log('parent mounted')
+          })
+          onBeforeUpdate(() => {
+            console.log('parent onBeforeUpdated')
+          })
+          onUpdated(() => {
+            console.log('parent onUpdated')
+          })
+
+          const value = ref('a')
+
+          setTimeout(() => {
+            value.value = 'b'
+          }, 1000)
+          return () => {
+            return h(myComponent, { value: value.value })
+          }
+        }
+      }
+
+      render(h(VueComponent), app)
     </script>
   </body>
 </html>

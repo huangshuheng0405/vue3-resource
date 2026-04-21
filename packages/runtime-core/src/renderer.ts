@@ -4,6 +4,7 @@ import { getSequence } from './LIS.js'
 import { ReactiveEffect } from '@myvue/reactivity'
 import { queueJob } from './scheduler.js'
 import { createComponentInstance, setupComponent } from './components.js'
+import { invokeArray } from './apiLifecycle.js'
 
 /**
  * 把vnode渲染成真实dom
@@ -467,24 +468,37 @@ export function createRenderer(renderOptions: any) {
     parentComponent: any
   ) {
     const { render } = instance
-
+    const { bm, m } = instance
     const componentUpdateFn = () => {
       // 我们要在这里面区分 是第一次 还是 后续更新
       if (!instance.isMounted) {
+        if (bm) {
+          invokeArray(bm)
+        }
         const subTree = renderComponent(instance)
         instance.subTree = subTree
         instance.isMounted = true
         patch(null, subTree, container, anchor, instance)
+
+        if (m) {
+          invokeArray(m)
+        }
       } else {
         // 基于状态的组件更新
-        const { next } = instance
+        const { next, bu, u } = instance
         if (next) {
           // 更新属性和插槽
           updateComponentPreRender(instance, next)
         }
+        if (bu) {
+          invokeArray(bu)
+        }
         const subTree = renderComponent(instance)
         patch(instance.subTree, subTree, container, anchor, instance)
         instance.subTree = subTree
+        if (u) {
+          invokeArray(u)
+        }
       }
     }
 

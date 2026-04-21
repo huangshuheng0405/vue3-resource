@@ -824,12 +824,44 @@ var handler = {
   }
 };
 var currentInstance = null;
+var getCurrentInstance = () => currentInstance;
 var setCurrentInstance = (instance) => {
   currentInstance = instance;
 };
 var unSetCurrentInstance = () => {
   currentInstance = null;
 };
+
+// packages/runtime-core/src/apiLifecycle.ts
+var Lifecycle = /* @__PURE__ */ ((Lifecycle2) => {
+  Lifecycle2["BEFORE_MOUNT"] = "bm";
+  Lifecycle2["MOUNTED"] = "m";
+  Lifecycle2["BEFORE_UPDATE"] = "bu";
+  Lifecycle2["UPDATED"] = "u";
+  return Lifecycle2;
+})(Lifecycle || {});
+function createHook(type) {
+  return (hook, target = currentInstance) => {
+    if (target) {
+      const hooks = target[type] || (target[type] = []);
+      const wrapHook = () => {
+        setCurrentInstance(target);
+        hook.call(target);
+        unSetCurrentInstance();
+      };
+      hooks.push(wrapHook);
+    }
+  };
+}
+var onBeforeMount = createHook("bm" /* BEFORE_MOUNT */);
+var onMounted = createHook("m" /* MOUNTED */);
+var onBeforeUpdate = createHook("bu" /* BEFORE_UPDATE */);
+var onUpdated = createHook("u" /* UPDATED */);
+function invokeArray(fns) {
+  for (let i = 0; i < fns.length; i++) {
+    fns[i]();
+  }
+}
 
 // packages/runtime-core/src/renderer.ts
 function createRenderer(renderOptions2) {
@@ -1045,20 +1077,33 @@ function createRenderer(renderOptions2) {
   }
   function setupRenderEffect(instance, container, anchor, parentComponent) {
     const { render: render3 } = instance;
+    const { bm, m } = instance;
     const componentUpdateFn = () => {
       if (!instance.isMounted) {
+        if (bm) {
+          invokeArray(bm);
+        }
         const subTree = renderComponent(instance);
         instance.subTree = subTree;
         instance.isMounted = true;
         patch(null, subTree, container, anchor, instance);
+        if (m) {
+          invokeArray(m);
+        }
       } else {
-        const { next } = instance;
+        const { next, bu, u } = instance;
         if (next) {
           updateComponentPreRender(instance, next);
+        }
+        if (bu) {
+          invokeArray(bu);
         }
         const subTree = renderComponent(instance);
         patch(instance.subTree, subTree, container, anchor, instance);
         instance.subTree = subTree;
+        if (u) {
+          invokeArray(u);
+        }
       }
     };
     let effect2 = new ReactiveEffect(componentUpdateFn, () => {
@@ -1215,26 +1260,38 @@ var render = (vnode, container) => {
 export {
   DirtyLevel,
   Fragment,
+  Lifecycle,
   ReactiveEffect,
   ReactiveFlags,
   Teleport,
   Text,
   activeEffect,
   computed,
+  createComponentInstance,
   createRenderer,
   createVNode,
+  currentInstance,
   effect,
+  getCurrentInstance,
   h,
+  initSlots,
   inject,
+  invokeArray,
   isReactive,
   isRef,
   isSameVnode,
   isTeleport,
+  onBeforeMount,
+  onBeforeUpdate,
+  onMounted,
+  onUpdated,
   provide,
   proxyRefs,
   reactive,
   ref,
   render,
+  setCurrentInstance,
+  setupComponent,
   toReactive,
   toRef,
   toRefs,
@@ -1242,6 +1299,7 @@ export {
   trackRefValue,
   triggerEffect,
   triggerRefValue,
+  unSetCurrentInstance,
   watch,
   watchEffect
 };

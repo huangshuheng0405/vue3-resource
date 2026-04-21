@@ -89,9 +89,11 @@ export function setupComponent(instance: any) {
         handler && handler(...payload)
       }
     }
+
     setCurrentInstance(instance)
     const setupResult = setup(instance.props, setupContext)
     unSetCurrentInstance()
+
     if (isFunction(setupResult)) {
       instance.render = setupResult
     } else {
