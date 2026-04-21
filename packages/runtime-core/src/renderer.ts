@@ -599,8 +599,11 @@ export function createRenderer(renderOptions: any) {
    * @param vnode 虚拟节点
    */
   const unmount = (vnode: any) => {
+    const { shapeFlag } = vnode
     if (vnode.type === Fragment) {
       unmountChildren(vnode.children)
+    } else if (shapeFlag & ShapeFlags.COMPONENT) {
+      unmount(vnode.component.subTree)
     } else {
       hostRemove(vnode.el)
     }

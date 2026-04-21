@@ -1,7 +1,3 @@
-var __defProp = Object.defineProperty;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
-
 // packages/runtime-dom/src/nodeOps.ts
 var nodeOps = {
   /**
@@ -297,22 +293,24 @@ var ReactiveEffect = class {
    * @param scheduler 如果fn中依赖的数据发生变化后 需要重新调用 -> run()
    */
   constructor(fn, scheduler) {
-    __publicField(this, "fn", fn);
-    __publicField(this, "scheduler", scheduler);
-    __publicField(this, "_trackId", 0);
-    // 用于记录当前effect执行了几次
-    __publicField(this, "deps", []);
-    // 双向记录的dep列表 （effect依赖了哪些dep）
-    __publicField(this, "_depsLength", 0);
-    // 本次run实际用到的dep数量 用于清理多余dep
-    __publicField(this, "_running", 0);
-    // 正在运行次数 防止自己又触发自己导致递归死循环
-    __publicField(this, "_dirtyLevel", 4 /* Dirty */);
-    // 脏标记
-    __publicField(this, "active", true);
+    this.fn = fn;
+    this.scheduler = scheduler;
     this.fn = fn;
     this.scheduler = scheduler;
   }
+  fn;
+  scheduler;
+  _trackId = 0;
+  // 用于记录当前effect执行了几次
+  deps = [];
+  // 双向记录的dep列表 （effect依赖了哪些dep）
+  _depsLength = 0;
+  // 本次run实际用到的dep数量 用于清理多余dep
+  _running = 0;
+  // 正在运行次数 防止自己又触发自己导致递归死循环
+  _dirtyLevel = 4 /* Dirty */;
+  // 脏标记
+  active = true;
   get dirty() {
     return this._dirtyLevel === 4 /* Dirty */;
   }
@@ -471,14 +469,15 @@ function createRef(value) {
 }
 var RefImpl = class {
   constructor(rawValue) {
-    __publicField(this, "rawValue", rawValue);
-    __publicField(this, "__v_isRef", true);
-    // 增加ref 标识
-    __publicField(this, "_value");
-    // 用来保存ref的值
-    __publicField(this, "dep");
+    this.rawValue = rawValue;
     this._value = toReactive(rawValue);
   }
+  rawValue;
+  __v_isRef = true;
+  // 增加ref 标识
+  _value;
+  // 用来保存ref的值
+  dep;
   get value() {
     trackRefValue(this);
     return this._value;
@@ -507,9 +506,11 @@ function triggerRefValue(ref2) {
 }
 var ObjectRefImpl = class {
   constructor(_object, _key) {
-    __publicField(this, "_object", _object);
-    __publicField(this, "_key", _key);
+    this._object = _object;
+    this._key = _key;
   }
+  _object;
+  _key;
   get value() {
     return this._object[this._key];
   }
@@ -548,10 +549,7 @@ function proxyRefs(objectWithRef) {
 // packages/reactivity/src/computed.ts
 var ComputedRefImpl = class {
   constructor(getter, setter) {
-    __publicField(this, "setter", setter);
-    __publicField(this, "_value");
-    __publicField(this, "effect");
-    __publicField(this, "dep");
+    this.setter = setter;
     this.effect = new ReactiveEffect(
       () => getter(this._value),
       () => {
@@ -559,6 +557,10 @@ var ComputedRefImpl = class {
       }
     );
   }
+  setter;
+  _value;
+  effect;
+  dep;
   get value() {
     if (this.effect.dirty) {
       this._value = this.effect.run();
@@ -690,7 +692,8 @@ function createComponentInstance(vnode) {
     component: null,
     proxy: null,
     // 用来代理 props  attrs data 让用户更方便使用
-    setupState: null
+    setupState: null,
+    exposed: null
   };
   return instance;
 }
@@ -726,7 +729,18 @@ function setupComponent(instance) {
   const { data = () => {
   }, render: render2, setup } = vnode.type;
   if (setup) {
-    const setupContext = {};
+    const setupContext = {
+      slots: instance.slots,
+      attrs: instance.attrs,
+      expose: (value) => {
+        instance.exposed = value;
+      },
+      emit(event, ...payload) {
+        const eventName = `on${event[0].toUpperCase() + event.slice(1)}`;
+        const handler2 = instance.vnode.props[eventName];
+        handler2 && handler2(...payload);
+      }
+    };
     const setupResult = setup(instance.props, setupContext);
     if (isFunction(setupResult)) {
       instance.render = setupResult;
@@ -1073,8 +1087,11 @@ function createRenderer(renderOptions2) {
     }
   };
   const unmount = (vnode) => {
+    const { shapeFlag } = vnode;
     if (vnode.type === Fragment) {
       unmountChildren(vnode.children);
+    } else if (shapeFlag & 6 /* COMPONENT */) {
+      unmount(vnode.component.subTree);
     } else {
       hostRemove(vnode.el);
     }

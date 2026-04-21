@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev:core": "node scripts/dev.js runtime-core -f esm",
-    "dev:dom": "node scripts/dev.js runtime-dom -f esm",
+    "dev": "node scripts/dev.js runtime-dom -f esm",
     "build": "node scripts/build.js",
     "commit": "git-cz"
   },

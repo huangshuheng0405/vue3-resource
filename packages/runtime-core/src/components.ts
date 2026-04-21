@@ -19,7 +19,8 @@ export function createComponentInstance(vnode: any) {
     propsOptions: vnode.type.props, // 用户声明的哪些属性是组件属性
     component: null,
     proxy: null, // 用来代理 props  attrs data 让用户更方便使用
-    setupState: null
+    setupState: null,
+    exposed: null
   }
 
   return instance
@@ -73,7 +74,20 @@ export function setupComponent(instance: any) {
 
   const { data = () => {}, render, setup } = vnode.type
   if (setup) {
-    const setupContext = {}
+    const setupContext = {
+      slots: instance.slots,
+      attrs: instance.attrs,
+      expose: (value: any) => {
+        instance.exposed = value
+      },
+      emit(event: any, ...payload: any) {
+        // debugger
+        const eventName = `on${event[0].toUpperCase() + event.slice(1)}`
+
+        const handler = instance.vnode.props[eventName]
+        handler && handler(...payload)
+      }
+    }
     const setupResult = setup(instance.props, setupContext)
 
     if (isFunction(setupResult)) {

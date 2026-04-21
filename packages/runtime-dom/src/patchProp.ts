@@ -21,14 +21,18 @@ export default function patchProp(
   nextValue: any
 ) {
   if (key === 'class') {
+    // 给元素绑定class属性
     return patchClass(el, nextValue)
   } else if (key === 'style') {
+    // 给元素绑定style属性
     // {color:red}  {backgroundColor:red}
     return patchStyle(el, prevValue, nextValue)
   } else if (/^on[^a-z]/.test(key)) {
+    // 给元素绑定事件属性
     // el.addEventListener(key, nextValue)
     return patchEvent(el, key, nextValue)
   } else {
+    // 给元素绑定其他属性
     return patchAttr(el, key, nextValue)
   }
 }

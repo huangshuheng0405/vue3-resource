@@ -5,7 +5,7 @@
   "type": "module",
   "types": "dist/runtime-core.d.ts",
   "main": "index.js",
-  "module": "dist/runtime-core.js",
+  "module": "src/index.ts",
   "unpkg": "dist/runtime-core.global.js",
   "scripts": {
     "dev:ts": "tsc -w",

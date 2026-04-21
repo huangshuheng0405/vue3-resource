@@ -4,7 +4,7 @@
   "description": "Reactivity utils for Vue 3",
   "type": "module",
   "main": "index.js",
-  "module": "dist/reactivity.js",
+  "module": "src/index.ts",
   "types": "dist/types/index.d.ts",
   "scripts": {
     "build": "node build.js",
