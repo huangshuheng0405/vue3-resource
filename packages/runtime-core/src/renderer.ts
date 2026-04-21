@@ -1,7 +1,7 @@
-import { ShapeFlags, hasOwn } from '@myvue/shared'
+import { ShapeFlags } from '@myvue/shared'
 import { Fragment, isSameVnode, Text } from './createVnode.js'
 import { getSequence } from './LIS.js'
-import { reactive, ReactiveEffect } from '@myvue/reactivity'
+import { ReactiveEffect } from '@myvue/reactivity'
 import { queueJob } from './scheduler.js'
 import { createComponentInstance, setupComponent } from './components.js'
 

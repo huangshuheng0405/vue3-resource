@@ -28,6 +28,8 @@ export function createVNode(type: any, props: any, children?: any) {
   if (children) {
     if (Array.isArray(children)) {
       vnode.shapeFlag |= ShapeFlags.ARRAY_CHILDREN // 补充孩子是数组
+    } else if (isObject(children)) {
+      vnode.shapeFlag |= ShapeFlags.SLOTS_CHILDREN // 组件的孩子
     } else {
       vnode.children = String(children)
       vnode.shapeFlag |= ShapeFlags.TEXT_CHILDREN // 补充孩子是文本
